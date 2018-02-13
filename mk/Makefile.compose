@@ -1,0 +1,39 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+RAILS_ENV?=development
+
+compose: COMPOSE?=run api
+compose: SHELL:=/bin/bash
+compose:
+	${ROOT}/bin/compose -f $${COMPOSE_FILE:-api-dev} ${COMPOSE} ${CMD}
+
+compose_up:
+	$(MAKE) -C ${ROOT} compose COMPOSE=up
+
+compose_down:
+	$(MAKE) -C ${ROOT} compose COMPOSE=down
+
+shell:
+	$(MAKE) -C ${ROOT} compose COMPOSE="exec api env RAILS_ENV=$${RAILS_ENV:-${RAILS_ENV}} bash"
+
+rails_up:
+	rm -Rf ${ROOT}/tmp/pids/*
+	rm -Rf ${ROOT}/tmp/sockets/*
+	$(MAKE) -C ${ROOT} compose COMPOSE=up
+
+rails_console:
+	$(MAKE) -C ${ROOT} compose COMPOSE="exec api env RAILS_ENV=$${RAILS_ENV:-${RAILS_ENV}} bundle exec rails c"
+
+rails_rake:
+	$(MAKE) -C ${ROOT} compose COMPOSE="exec api env RAILS_ENV=$${RAILS_ENV:-${RAILS_ENV}} bundle exec rake $${RAKE:--T}"
+
+rails_routes:
+	$(MAKE) -C ${ROOT} rails_rake RAKE=routes
+
+rails_migrate:
+	$(MAKE) -C ${ROOT} rails_rake RAKE=db:migrate
+
+rails_bootstrap:
+	$(MAKE) -C ${ROOT} rails_rake RAKE=db:create
+	$(MAKE) -C ${ROOT} rails_rake RAKE=db:migrate
+	$(MAKE) -C ${ROOT} rails_rake RAKE=admin:config:bootstrap

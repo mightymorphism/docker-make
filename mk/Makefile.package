@@ -1,0 +1,25 @@
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+
+# Clumsy detection and handling of a docker build environment
+# Don't use runas so we can build it without already having it
+package:
+	if [ "$${DOCKER}" = true ] ; then			\
+		${ROOT}/mk/packaging/docker-setup.sh -o;	\
+		su - build -c 'bash -l -c "cd src && $(MAKE) package_guts"' ; \
+	else							\
+		$(MAKE) package_guts ;				\
+	fi
+
+package_guts: git_no_untracked dpkg_deb_present package_build
+	if [ "$${DOCKER}" = true ] ; then			\
+		${ROOT}/mk/packaging/docker-volcopy.sh ;	\
+	fi
+
+package_build: build
+	${ROOT}/mk/packaging/build_deb_package.sh
+
+package_version:
+	(cd ${BUILD_ROOT} && bash mk/packaging/mkversion.sh src/${PACKAGE_NAME})
+
+dpkg_deb_present:
+	@which dpkg-deb

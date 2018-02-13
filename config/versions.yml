@@ -1,0 +1,4 @@
+ruby: 2.4.2
+golang: 1.9.2
+java: openjdk-8
+nodejs: 8.9.4

@@ -1,0 +1,111 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+require 'shellwords'
+
+def find_exec(exe)
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exe_path = File.join(path, exe)
+    if File.executable?(exe_path) && !File.directory?(exe_path) then
+      return exe_path
+    end
+  end
+  return nil
+end
+
+COMMANDS = %w(build bundle config create down events exec help kill logs pause
+port ps pull push restart rm run scale start stop unpause up version)
+
+compose_args = []
+command_args = true
+package_name = ENV['PACKAGE_NAME']
+compose_user = ENV.fetch('COMPOSE_USER', 'root')
+rootdir = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+
+i=0
+while i<ARGV.length do
+  arg = ARGV[i]
+  i += 1
+  if command_args then
+    case arg
+    when '--'
+      command_args = false
+      next
+
+    when '-f', '--file'
+      fname = ARGV[i]
+      i += 1
+
+      if File.exists?(fname) then
+        compose_args += %W(-f #{fname})
+      elsif !fname.include?('/') then
+        fname = File.join(rootdir, "docker/build", "compose-#{fname}.yml")
+        fname = File.expand_path(fname)
+        compose_args += %W(-f #{fname})
+      else
+        $stderr.puts "Missing compose file: #{fname.inspect}"
+        exit(1)
+      end
+
+    when '-u'
+      compose_user = ARGV[i]
+      if compose_user.nil? then
+        $stderr.puts "Missing user name"
+        exit(1)
+      end
+
+      i += 1
+
+    when '-p'
+      package_name = ARGV[i]
+      if package_name.nil? then
+        $stderr.puts "Missing package name"
+        exit(1)
+      end
+
+    else
+      if COMMANDS.member?(arg) then
+        command_args = false
+        i -= 1
+      end
+
+    end
+
+  else
+    case arg
+    when 'run', 'exec'
+      service = ARGV[i]
+      if service.nil? then
+        $stderr.puts "Missing service name"
+        exit(1)
+      end
+
+      compose_args << arg
+      compose_args << service
+
+      i += 1
+      if !compose_user.nil? && i < ARGV.length then
+        compose_args += %W(runas -u #{compose_user})
+      end
+
+      compose_args += ARGV[i..-1]
+
+      break
+    else
+      compose_args << arg
+    end
+  end
+end
+
+if package_name then
+  compose_args = %W(-p #{package_name}) + compose_args
+end
+
+compose_exe = find_exec('docker-compose')
+if compose_exe.nil? then
+  $stderr.puts "unable to find docker-compose binary"
+  exit(1)
+end
+
+args = [compose_exe] + compose_args
+Kernel.exec(*args)

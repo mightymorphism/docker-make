@@ -1,0 +1,141 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+$dockerb = binding
+
+require 'erb'
+require 'json'
+require 'yaml'
+require 'ostruct'
+require 'optparse'
+require 'tempfile'
+require 'hashie/mash'
+
+def walk_config(c, path)
+  service_name = nil
+  i = path.index("services")
+  if !i.nil? then
+    service_name = path[i+1]
+  end
+
+  if c.is_a?(Hash) then
+    c.each_pair do |k, v|
+      walk_config(v, path+[k])
+    end
+  elsif c.is_a?(Array) then
+    c.each_with_index do |c0, i|
+      if c0.is_a?(String) && path.last == 'environment' then
+        c0.sub!(/[$]dockerb[.]service/, service_name)
+      end
+      walk_config(c0, path+[i])
+    end
+  end
+end
+
+def process_compose(c)
+  header = c.dockerb_.header
+  c.delete(:dockerb)
+  c = JSON.parse(JSON.dump(c))
+
+  walk_config(c, [])
+  return c, header
+end
+
+
+options = OpenStruct.new
+options.errors = []
+options.version = false
+options.output_file = nil
+
+opt = OptionParser.new do |opts|
+  opts.banner = "usage: dockerb [-o <output-file>] <file> <revision>|<var=val...>"
+  opts.on("-v", "--version", "Print version", :NONE) do
+    options.version = true
+  end
+  opts.on("-o", "--output-file", "Direct output to file instead of stdout", :REQUIRED) do |fname|
+    options.output_file = fname
+  end
+end
+
+opt.parse!
+
+if !options.errors.empty? then
+  options.errors.each do |err|
+    $stderr.puts err
+  end
+  Kernelexit(1)
+end
+
+if options.version then
+  $stdout.puts "unversioned"
+  exit(0)
+end
+
+
+if ARGV.length < 2 then
+  $stderr.puts opt.banner
+  Kernel.exit(1)
+end
+
+
+$fname = ARGV[0]
+if !File.exists?($fname) then
+  $stderr.puts("no such file: #{$fname.inspect}")
+  Kernel.exit(1)
+elsif !File.readable?($fname) then
+  $stderr.puts("#{$fname.inspect} is not readable")
+  Kernel.exit(1)
+end
+
+$content = File.read($fname)
+
+args = Hash.new
+ARGV[1..-1].each_with_index do |arg, i|
+  var, val = arg.split('=', 2)
+  if i == 0 && !var.nil? && var.length != 0 && val.nil? then
+    args['revision'] = var
+  elsif var.nil? || var.length == 0 || val.nil? then
+    $stderr.puts opt.banner
+    Kernel.exit(1)
+  else
+    args[var] = val
+  end
+end
+
+# BOTCH: backwards compatibility
+if args.member?('revision') then
+  args['package_revision'] = args['revision']
+end
+
+args.each_pair do |var, val|
+  $dockerb.local_variable_set(var.to_sym, val)
+end
+
+result = ERB.new($content).result($dockerb)
+if $fname =~ /[.]yml([.]erb)?$/ then
+  y = YAML.load(result)
+  y = Hashie::Mash.new(y)
+  y, header = process_compose(y)
+  result = ''
+  if header then
+    result += header
+    result += "\n\n"
+  end
+  result += y.to_yaml
+end
+
+if !options.output_file then
+  $stdout.puts result
+  Kernel.exit(0)
+end
+
+current = nil
+if File.exists?(options.output_file) then
+  current = File.read(options.output_file)
+end
+
+if current != result then
+  File.open(options.output_file, 'w') do |f|
+    f.puts result
+  end
+end

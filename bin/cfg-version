@@ -1,0 +1,67 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+
+require 'yaml'
+require 'ostruct'
+require 'optparse'
+
+DEFAULT_CONFIG_PATH = '/etc/build/versions.yml'
+USAGE_MESSAGE = "usage: cfg-version [-c config-path] [-d default-value] <dependency>"
+
+options = OpenStruct.new
+options.config = nil
+options.default = nil
+options.errors = []
+options.version = false
+
+opt = OptionParser.new do |opts|
+  opts.banner = USAGE_MESSAGE
+  opts.on("-v", "--version", "Print version", :NONE) do
+    options.version = true
+  end
+  opts.on("-c", "--config", "Set config file", :REQUIRED) do |path|
+     options.config = path
+     if !File.exists?(path) then
+       options.errors << "unknown config file: #{path.inspect}"
+     end
+  end
+  opts.on("-d", "--default", "Set default value", :REQUIRED) do |default|
+     options.default = default
+  end
+end
+
+opt.parse!
+
+if !options.errors.empty? then
+  options.errors.each do |err|
+    $stderr.puts err
+  end
+  exit(1)
+end
+
+if ARGV.length != 1 then
+  $stderr.puts USAGE_MESSAGE
+  exit(1)
+end
+
+depname = ARGV[0]
+
+cfg_path = options.config
+cfg_path ||= File.expand_path(DEFAULT_CONFIG_PATH)
+
+if !File.exists?(cfg_path) then
+  $stderr.puts "unable to find configuration file: #{cfg_path.inspect}"
+  exit(1)
+end
+
+versions = YAML.load_file(cfg_path)
+
+value = versions.fetch(depname, options.default)
+
+if !value then
+  $stderr.puts "unknown dependency #{depname.inspect}"
+  exit(1)
+end
+
+puts value
+exit(0)

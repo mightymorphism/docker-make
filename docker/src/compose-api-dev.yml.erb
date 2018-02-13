@@ -1,0 +1,52 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+<% require 'securerandom' %>
+
+dockerb:
+  header: '# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved'
+  rails_config: &rails_config
+    privileged: true
+    environment:
+    - DOCKER=true
+    - RAILS_ENV=development
+    - DB_USER=api
+    - DB_PASSWORD=api
+    - DB_HOST=db
+    - DB_PORT=5432
+    - SECRET_KEY_BASE=<%= SecureRandom.hex(64) %>
+    image: sample:api-dev-<%= package_revision %>
+    volumes:
+    - <%= ENV['BUILD_ROOT'] %>:/home/api
+    - <%= ENV['BUILD_ROOT'] %>/dev/log:/home/api/log
+
+version: "2"
+services:
+  db:
+    # https://hub.docker.com/_/postgres/
+    image: postgres:9.6
+    ports:
+    - "8001:5432"
+    environment:
+    - POSTGRES_PASSWORD=api
+    - POSTGRES_USER=api
+    volumes:
+    - postgres:/var/lib/postgresql/data
+  delayed_job:
+    <<: *rails_config
+    command: runas -u api bundle exec /home/api/bin/delayed_job run
+    depends_on:
+      - db
+  dj_cron:
+    <<: *rails_config
+    command: runas -u api bundle exec /home/api/bin/dj_cron
+    depends_on:
+      - db
+  api:
+    <<: *rails_config
+    ports:
+    - "3000:3000"
+    depends_on:
+      - db
+
+volumes:
+  postgres:

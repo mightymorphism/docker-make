@@ -1,0 +1,27 @@
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+#
+# Make venv_* dependency of non-venv version
+$(foreach _, init check clean nuke reset, $(eval $_: venv_$_))
+$(foreach _, init check clean nuke reset, $(eval .PHONY: venv_$_))
+
+VENV_ROOT := ${ROOT}/vendor/virtualenv
+
+venv_check:
+	@if [ "$${VIRTUAL_ENV}" != "${VENV_ROOT}" ] ; then		\
+		echo "virtualenv not (properly) activated" 1>&2 ;	\
+		exit 1 ;						\
+	fi
+
+venv_init:
+	@if [ \! -f ${VENV_ROOT}/bin/activate ] ; then		\
+		virtualenv --no-site-packages ${VENV_ROOT};	\
+	fi
+
+venv_clean:
+	rm -f *.pyc
+
+venv_nuke: venv_clean
+	find ${VENV_ROOT} -type f -a -name '*.pyc' | xargs rm -f
+
+venv_reset:
+	virtualenv --clear ${VENV_ROOT}

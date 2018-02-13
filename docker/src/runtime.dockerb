@@ -1,0 +1,19 @@
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+
+FROM sample:base-<%= package_revision %>
+
+LABEL name="sample-runtime"
+LABEL environment="production"
+LABEL owner="Trough Creek Holdings, LLC"
+LABEL description="Sample runtime environment"
+
+WORKDIR /root
+
+COPY docker/script/install-dev-common.sh \
+     docker/script/build-ruby.sh \
+     docker/script/install-nodejs.sh \
+     /root/
+
+RUN bash -l /root/install-dev-common.sh
+RUN bash -l /root/build-ruby.sh
+RUN bash -l /root/install-nodejs.sh

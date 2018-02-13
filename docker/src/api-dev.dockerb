@@ -1,0 +1,13 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+FROM sample:build-<%= package_revision %>
+
+LABEL name="sample-api-dev"
+LABEL environment="development"
+LABEL owner="Trough Creek Holdings, LLC"
+LABEL description="Sample Rails API server development environment"
+
+<%= File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.body')) %>
+
+EXPOSE 3000
+CMD runas -u api bundle exec rails server -b 0.0.0.0

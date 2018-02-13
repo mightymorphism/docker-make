@@ -1,0 +1,40 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+# Make lambda_* dependency of non-lambda version
+$(foreach _, init check clean nuke reset, $(eval $_: lambda_$_))
+$(foreach _, init check clean nuke reset, $(eval .PHONY: lambda_$_))
+
+lambda_build: venv_init
+	make ${LAMBDA}.zip
+
+${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
+	. ${VENV_ROOT}/bin/activate ;					\
+									\
+	rm -f ${LAMBDA}.zip ;						\
+	zip -r ${LAMBDA}.zip *.py ;					\
+									\
+	zipfile=${CURDIR}/${LAMBDA}.zip ;				\
+	for f in ${LAMBDA_ZIP_FILES} ; do				\
+		(cd `dirname $$f` && zip -r $$zipfile `basename $$f`) ;	\
+	done ;								\
+									\
+	for d in local/lib lib/python2.7/site-packages ; do		\
+		if [ -d ${VENV_ROOT}/$$d ] ; then			\
+			(cd ${VENV_ROOT}/$$d && zip -r $$zipfile .) ;	\
+		fi							\
+	done
+
+create: ${LAMBDA}.zip
+	#aws lambda get-function-configuration --function-name bx-replicate
+
+deploy: ${LAMBDA}.zip
+	@if [ -z "${LAMBDA_ARN}" ] ; then				\
+		echo "Missing LAMBDA_ARN" ;				\
+		exit 1 ;						\
+	fi
+	aws lambda update-function-code --function-name "${LAMBDA_ARN}" --publish --zip-file "fileb://${LAMBDA}.zip"
+
+lambda_clean:
+	rm -f ${LAMBDA}.zip
+
+lambda_nuke: clean

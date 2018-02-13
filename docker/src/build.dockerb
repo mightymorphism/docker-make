@@ -1,0 +1,16 @@
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+
+FROM sample:runtime-<%= package_revision %>
+
+LABEL name="sample-build"
+LABEL environment="development"
+LABEL owner="Trough Creek Holdings, LLC"
+LABEL description="Sample static build toolchain image"
+
+WORKDIR /root
+
+COPY docker/script/install-jdk.sh docker/script/install-golang.sh /root/
+
+RUN apt-get install -y vim less
+RUN bash -l /root/install-jdk.sh
+RUN bash -l /root/install-golang.sh

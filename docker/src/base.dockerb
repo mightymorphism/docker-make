@@ -1,0 +1,21 @@
+# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+
+FROM ubuntu:16.04
+
+LABEL name="sample-base"
+LABEL environment="production"
+LABEL owner="Trough Creek Holdings, LLC"
+LABEL description="Sample base environment with common dependencies"
+
+WORKDIR /root
+
+RUN mkdir -p /etc/buid
+
+COPY bin/cfg-version /usr/local/bin
+COPY config/versions.yml REVISION /etc/build/
+
+COPY docker/script/package-maintainer.asc /root
+COPY docker/script/morphisms.list /etc/apt/sources.list.d
+COPY docker/script/install-base.sh /root/install-base.sh
+
+RUN bash -l /root/install-base.sh

@@ -1,0 +1,25 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+ARG ASSET_HOST
+
+RUN useradd -m -G ruby -s /bin/bash api
+
+WORKDIR /home/api
+
+RUN (echo ""; cat /etc/profile.d/rbenv.sh) >> /home/api/.bashrc
+
+#COPY vendor /home/api/vendor
+RUN mkdir -p /home/api/.bundle
+COPY Gemfile Gemfile.lock package.json /home/api/
+COPY config/bundle_config /home/api/.bundle/config
+RUN mkdir -p /home/api/log/dj_monitor
+
+RUN chown -R api:api /home/api
+
+RUN runas -u api npm install
+RUN runas -u api bash -c "bundle check > /dev/null || bundle install -j2"
+
+COPY . /home/api
+RUN chown -R api:api /home/api
+
+RUN runas -u api bundle exec rake ASSET_HOST=${ASSET_HOST} RAILS_ENV=production assets:clobber assets:precompile

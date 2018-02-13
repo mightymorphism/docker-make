@@ -1,0 +1,205 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+require 'json'
+require 'ostruct'
+require 'optparse'
+require 'pathname'
+
+options = OpenStruct.new
+options.errors = []
+options.prefix = []
+options.labels = []
+options.environment = nil
+options.version = false
+options.format = 'make'
+
+opt = OptionParser.new do |opts|
+  opts.banner = "usage: docker-deps [-p PREFIX] <dirs|files..>"
+  opts.on("-v", "--version", "Print version", :NONE) do
+    options.version = true
+  end
+  opts.on("-l", "--label", "Select images by label", :REQUIRED) do |label|
+    key, value = label.split('=', 2)
+    options.labels << [key, value]
+  end
+  opts.on("-e", "--environment", "Select images by environment", :REQUIRED) do |env|
+    options.environment = env
+  end
+  opts.on("-f", "--format", "Set output format", :REQUIRED) do |fmt|
+     options.format = fmt
+     if !%w(make json).member?(fmt) then
+       options.errors << "unknown output format: #{fmt.inspect}"
+     end
+  end
+  opts.on("-p", "--prefix", "Set prefix", :REQUIRED) do |p|
+     options.prefix << p
+  end
+end
+
+opt.parse!
+
+if !options.errors.empty? then
+  options.errors.each do |err|
+    $stderr.puts err
+  end
+  exit(1)
+end
+
+if options.version then
+  $stdout.puts "unversioned"
+  exit(0)
+end
+
+op = ARGV.shift
+case op
+when 'gen', 'list'
+when nil
+  $stderr.puts "missing command"
+  exit(1)
+else
+  $stderr.puts "unknown command: #{op.inspect}"
+  exit(1)
+end
+
+ok = true
+docker_files = ARGV.map do |fname|
+  if !File.exists?(fname) then
+    $stderr.puts "#{fname.inspect} does not exist"
+    ok = false
+  elsif File.directory?(fname) then
+    Dir.glob("#{fname}/src/*.dockerb")
+  elsif File.ftype(fname) == "file" then
+    fname
+  else
+    $stderr.puts "#{fname.inspect} not a plain file or directory"
+    ok = false
+  end
+end
+
+if !ok then
+  exit(1)
+end
+
+docker_files.flatten!
+
+class MakeRule < OpenStruct
+end
+
+class DockerDep < Hash
+  def initialize
+    super
+    store(:deps, [])
+    store(:make_deps, [])
+  end
+
+  def generate_make_rule
+    mk_rules = []
+    deps = fetch(:make_deps, [])
+    if !deps.empty? then
+      mk_deps = deps.map { |d| "docker_build_#{d}" }
+      mk_rules << "docker_build_#{fetch(:name)}: " + mk_deps.join(' ')
+
+      mk_rules << "docker_build_#{fetch(:name)}: ${ROOT}/#{fetch(:dst_path)}"
+      mk_rules << "${ROOT}/#{fetch(:dst_path)}: ${ROOT}/#{fetch(:src_path)}"
+    end
+
+    if !mk_rules.empty? then
+      return mk_rules.join("\n")
+    end
+    return nil
+  end
+end
+
+docker_deps = Hash.new { |h, k| h[k] = DockerDep.new }
+
+docker_files.each do |fname|
+  name = fname.strip
+  name = name.sub(/^.*\//, '')
+  name = name.sub(/^Dockerfile[.]/, '')
+  name = name.sub(/[.]dockerb$/, '')
+
+  if name.nil? || name.empty? then
+    $stderr.puts "Unable to determine dep name for #{fname.inspect}"
+    exit(1)
+  end
+
+  File.open(fname, 'r') do |f|
+    f.each_line do |line|
+      # FROM line must be of the following form:
+      #       FROM prefix:image-version
+      # Where:
+      # * prefix will be the project name and docker repo name
+      # * image will be role that this image is built from
+      # * version may be an ERB expression
+      if line =~ /^\s*FROM/ then
+        kw, arg, _ = line.split(/\s+/)
+        src, version = arg.reverse.split(/-/, 2).map(&:reverse).reverse
+        prefix = options.prefix.find { |p| src =~ /^#{p}:/ }
+
+        d = Pathname(fname).each_filename.to_a[0...-1]
+        if d[-1] == 'src' then
+          d[-1] = 'build'
+          d.push("Dockerfile.#{name}")
+        end
+        dst_fname = d.join('/')
+
+        docker_deps[name][:deps] << src
+        docker_deps[name][:name] = name
+        docker_deps[name][:labels] = {}
+        docker_deps[name][:src_path] = fname
+        docker_deps[name][:dst_path] = dst_fname
+        if !prefix.nil? then
+          docker_deps[name][:prefix] = prefix
+          docker_deps[name][:make_deps] << src.sub(/^#{prefix}:/, '')
+        end
+      elsif line =~ /^\s*LABEL/ then
+        # only supports one key/value pair per line and no embedded newlines
+        kw, val = line.strip.split(/\s+/, 2)
+        label, value = val.split(/=/, 2)
+        docker_deps[name][:labels][label] = value[1...-1]
+      end
+    end
+  end
+end
+
+case op
+when 'list'
+  tgts = []
+  docker_deps.each_pair do |name, dep|
+    ok = options.labels.empty? && options.environment.nil?
+    if options.environment then
+      ok ||= dep[:labels]['environment'] == options.environment
+    end
+    dep[:labels].each_pair do |k, v|
+      ok ||= options.labels.any? { |kk, vv| kk == k && vv == v }
+    end
+    if ok then
+      tgts << name
+    end
+  end
+  tgts.uniq!
+  tgts.each do |t|
+    puts t
+  end
+
+when 'gen'
+  case options.format
+  when 'json'
+    puts JSON.pretty_generate(docker_deps)
+
+  when 'make'
+    docker_deps.each_pair do |name, dep|
+      mk_rule = dep.generate_make_rule
+      if mk_rule then
+        puts "#{mk_rule}\n"
+      end
+    end
+
+  else
+    $stderr.puts "unknown/unsupported output format"
+    exit(1)
+  end
+end
+
+exit(0)

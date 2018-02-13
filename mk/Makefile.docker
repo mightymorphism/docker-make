@@ -1,0 +1,98 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+# NB: requires "experimental" mode because Docker is dumb as rocks
+ifneq (${DOCKER_SQUASH},)
+DOCKER_SQUASH:=--squash
+endif
+
+# Make docker_* dependency of non-docker version
+$(foreach _, init check depend clean nuke reset, $(eval $_: docker_$_))
+$(foreach _, init check depend clean nuke reset, $(eval .PHONY: docker_$_))
+
+define DOCKER_BUILD_template
+.PHONY: docker_build_${1}
+build/Dockerfile.${1}: src/${1}.dockerb
+	${ROOT}/bin/dockerb -o build/Dockerfile.${1} src/${1}.dockerb ${REVISION}
+
+docker_expand_${1}: build/Dockerfile.${1}
+
+docker_build_${1}: docker_expand_${1}
+ifeq ($(wildcard ${CURDIR}/build/compose-build-${1}.yml),)
+	(cd ${ROOT} && docker build ${DOCKER_SQUASH} -f ${CURDIR}/build/Dockerfile.${1} --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" -t ${DOCKER_NS}:${1}-${REVISION} .)
+else
+	(cd ${ROOT} && docker-compose -f ${CURDIR}/build/compose-build-${1}.yml build)
+endif
+
+# Currently a dummy target as build tags locally
+docker_tag_${1}:
+	@/bin/true
+
+docker_remote_tag_${1}: docker_tag_${1}
+	docker tag ${DOCKER_NS}:${1}-${REVISION} ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}:${1}-${REVISION}
+
+docker_remote_push_${1}: docker_remote_tag_${1}
+	docker push ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}:${1}-${REVISION}
+
+docker_clean_${1}:
+	@docker images -q --filter "dangling=true" ${DOCKER_NS}:${1}-${REVISION} | xargs -I{} -r -n 1 bash -c 'echo "Removing image {}"; docker rmi {}'
+
+docker_nuke_${1}:
+	@rm -f build/Dockerfile.${1}
+	@docker images -q --filter "dangling=true" ${DOCKER_NS}/${1} | xargs -I{} -r -n 1 bash -c 'echo "Removing image {}"; docker rmi {}'
+endef
+
+ifdef DOCKER_CONTAINERS
+$(foreach t, ${DOCKER_CONTAINERS}, $(eval $(call DOCKER_BUILD_template,$t)))
+endif
+
+ifndef DOCKER_REMOTE_CONTAINERS
+DOCKER_REMOTE_CONTAINERS := ${DOCKER_CONTAINERS}
+endif
+
+define DOCKER_COMPOSE_template
+.PHONY: docker_compose_${1}
+build/compose-${1}.yml: src/compose-${1}.yml.erb
+	${ROOT}/bin/dockerb -o build/compose-${1}.yml src/compose-${1}.yml.erb ${REVISION}
+
+docker_compose_${1}: build/compose-${1}.yml
+endef
+
+ifdef DOCKER_COMPOSITIONS
+$(foreach t, ${DOCKER_COMPOSITIONS}, $(eval $(call DOCKER_COMPOSE_template,$t)))
+endif
+
+docker_depend:
+	(cd ${ROOT} && ${ROOT}/bin/docker-deps -p ${DOCKER_NS} -f make gen docker) > Makefile.deps
+	for t in ${DOCKER_CONTAINERS} ; do echo src/$${t}.dockerb: ${REL_ROOT}/REVISION >> Makefile.deps ; done
+	for t in ${DOCKER_COMPOSITIONS} ; do echo build/compose-$${t}.yml: src/compose-$${t}.yml.erb >> Makefile.deps ; done
+	for t in ${DOCKER_COMPOSITIONS} ; do echo src/compose-$${t}.yml.erb: ${REL_ROOT}/REVISION >> Makefile.deps ; done
+
+docker_compile: $(patsubst %, docker_expand_%, ${DOCKER_CONTAINERS}) $(patsubst %, docker_compose_%, ${DOCKER_COMPOSITIONS})
+
+docker_build: $(patsubst %, docker_build_%, ${DOCKER_CONTAINERS})
+
+docker_tag: $(patsubst %, docker_tag_%, ${DOCKER_CONTAINERS})
+
+docker_remote_tag: $(patsubst %, docker_remote_tag_%, ${DOCKER_REMOTE_CONTAINERS})
+
+docker_remote_push: $(patsubst %, docker_remote_push_%, ${DOCKER_REMOTE_CONTAINERS})
+
+docker_clean: $(patsubst %,docker_clean_%, ${DOCKER_CONTAINERS})
+
+docker_nuke: docker_cleanup $(patsubst %,docker_nuke_%, ${DOCKER_CONTAINERS})
+	docker volume prune -f
+
+docker_cleanup:
+	docker container prune -f
+	docker image prune -f
+	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Repository}}:{{.Tag}}" | grep -v ':<none>$$' | xargs -r -n 1 docker rmi
+	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Digest}}" | xargs -r -n 1 docker rmi
+
+docker_login:
+	aws $(if ${DOCKER_AWS_PROFILE}, --profile ${DOCKER_AWS_PROFILE},) ecr get-login --no-include-email $(if ${AWS_REGION}, --region ${AWS_REGION},) | bash
+
+docker_logout:
+	docker logout ${DOCKER_REGISTRY}
+
+docker_remote_list:
+	docker images https://${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}
