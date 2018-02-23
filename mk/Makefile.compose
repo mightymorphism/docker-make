@@ -13,6 +13,12 @@ compose_up:
 compose_down:
 	$(MAKE) -C ${ROOT} compose COMPOSE=down
 
+compose_recreate:
+	@test -n "${SERVICE}" || (echo "Set SERVICE (and COMPOSE_FILE)" && exit 1)
+	$(MAKE) -C ${ROOT} compose COMPOSE="stop ${SERVICE}"
+	$(MAKE) -C ${ROOT} compose COMPOSE="rm -f ${SERVICE}"
+	$(MAKE) -C ${ROOT} compose COMPOSE="up -d --no-deps ${SERVICE}"
+
 shell:
 	$(MAKE) -C ${ROOT} compose COMPOSE="exec api env RAILS_ENV=$${RAILS_ENV:-${RAILS_ENV}} bash"
 

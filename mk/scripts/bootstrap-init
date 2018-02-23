@@ -1,0 +1,50 @@
+#! /bin/bash
+# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+set -e
+
+for v in BUILD_ROOT CURDIR PACKAGE_NAME
+do
+	if test -z "${!v}"
+	then
+		echo "Missing variable: $v"
+		exit 1
+	fi
+done
+
+if test -z "${SUBJECT}"
+then
+	SUBJECT="/C=US/ST=CT/L=Stamford/O=example.com/OU=example.com/CN=auto.example.com"
+fi
+
+TEMPDIR=`mktemp -d`
+
+trap "{ rm -Rf $TEMPDIR ;  }" EXIT
+
+for d in rails ssl-private
+do
+	if \! test -d "${BUILD_ROOT}/bootstrap/${d}"
+	then
+		mkdir -p "${BUILD_ROOT}/bootstrap/${d}"
+		chmod 0700 "${BUILD_ROOT}/bootstrap/${d}"
+	fi
+done
+
+RAILS_ENV=production bundle exec rake admin:config:keys:gen init=true > ${BUILD_ROOT}/bootstrap/rails/secrets.yml
+
+cp ${BUILD_ROOT}/config/examples/database.bootstrap.yml ${BUILD_ROOT}/bootstrap/rails/database.yml
+
+cd ${TEMPDIR}
+
+openssl genrsa -des3 -passout pass:x -out server.pass.key 2048
+openssl rsa -passin pass:x -in server.pass.key -out server.key
+openssl req -new -key server.key -out server.csr -subj ${SUBJECT}
+openssl x509 -req -sha256 -days 90 -in server.csr -signkey server.key -out server.crt
+
+for ext in key crt
+do
+	mv server.${ext} ${BUILD_ROOT}/bootstrap/ssl-private/${PACKAGE_NAME}.${ext}
+done
+
+echo "Consider changing ownership of bootstrap/ssl-private to root:root"
+echo "Don't forget to update bootstrap/rails/database.yml"

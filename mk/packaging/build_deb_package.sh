@@ -6,7 +6,7 @@ set -e
 while [[ $# -gt 1 ]]
 do
 	case "$1" in
-	-o) overlay="true" ;;
+	-o) overlay="true"; shift ;;
 	*) echo "Unknown option \"$1\"" 1>&2 ; exit 1 ;;
 	esac
 done

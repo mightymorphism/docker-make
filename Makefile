@@ -8,3 +8,9 @@ include ${ROOT}/mk/Makefile.vars
 include ${ROOT}/mk/Makefile.ruby
 include ${ROOT}/mk/Makefile.docker
 include ${ROOT}/mk/Makefile.compose
+include ${ROOT}/mk/Makefile.exports
+
+nuke: nuke_local
+
+nuke_local:
+	rm -Rf bootstrap/*

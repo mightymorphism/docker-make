@@ -8,6 +8,7 @@ dockerb:
     privileged: true
     environment:
     - DOCKER=true
+    - SERVICE=$dockerb.service
     - RAILS_ENV=development
     - DB_USER=api
     - DB_PASSWORD=api
@@ -17,6 +18,7 @@ dockerb:
     image: sample:api-dev-<%= package_revision %>
     volumes:
     - <%= ENV['BUILD_ROOT'] %>:/home/api
+    - <%= ENV['BUILD_ROOT'] %>/vendor:/home/api/vendor
     - <%= ENV['BUILD_ROOT'] %>/dev/log:/home/api/log
 
 version: "2"
@@ -33,16 +35,17 @@ services:
     - postgres:/var/lib/postgresql/data
   delayed_job:
     <<: *rails_config
-    command: runas -u api bundle exec /home/api/bin/delayed_job run
+    command: /sbin/rails-entrypoint.sh /home/api/bin/delayed_job run
     depends_on:
       - db
   dj_cron:
     <<: *rails_config
-    command: runas -u api bundle exec /home/api/bin/dj_cron
+    command: /sbin/rails-entrypoint.sh /home/api/bin/dj_cron
     depends_on:
       - db
   api:
     <<: *rails_config
+    command: /sbin/rails-entrypoint.sh rails server -b 0.0.0.0
     ports:
     - "3000:3000"
     depends_on:

@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
 FROM ubuntu:16.04
 
@@ -9,7 +9,7 @@ LABEL description="Sample base environment with common dependencies"
 
 WORKDIR /root
 
-RUN mkdir -p /etc/buid
+RUN mkdir -p /etc/build
 
 COPY bin/cfg-version /usr/local/bin
 COPY config/versions.yml REVISION /etc/build/

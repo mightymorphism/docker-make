@@ -17,7 +17,8 @@ apt-get upgrade -y
 
 # Install basic shell utilities
 apt-get install -y file wget
-apt-get install -y vim-tiny
+apt-get install -y vim-tiny less
+apt-get install -y dnsutils telnet
 apt-get install -y libpq-dev postgresql-client
 apt-get install -y ca-certificates
 apt-get install -y locales

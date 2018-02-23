@@ -63,7 +63,7 @@ if !options.errors.empty? then
   options.errors.each do |err|
     $stderr.puts err
   end
-  Kernelexit(1)
+  Kernel.exit(1)
 end
 
 if options.version then

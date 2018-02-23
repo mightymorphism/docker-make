@@ -8,18 +8,29 @@ WORKDIR /home/api
 
 RUN (echo ""; cat /etc/profile.d/rbenv.sh) >> /home/api/.bashrc
 
-#COPY vendor /home/api/vendor
-RUN mkdir -p /home/api/.bundle
-COPY Gemfile Gemfile.lock package.json /home/api/
-COPY config/bundle_config /home/api/.bundle/config
-RUN mkdir -p /home/api/log/dj_monitor
+RUN mkdir -p /home/api/.bundle /home/api/log /home/api/tmp
+COPY --chown=api:api config/bundle_config /home/api/.bundle/config
+COPY --chown=api:api docker/script/rails-entrypoint.sh /sbin
 
-RUN chown -R api:api /home/api
+<% for fname in %w(Gemfile Gemfile.lock package.json package-lock.json) %>
+COPY --chown=api:api <%= fname %> <%= File.join('/home/api', fname) %>
+<% end %>
+
+<% for dname in %w(vendor/cache node_modules) %>
+COPY --chown=api:api <%= dname %> <%= File.join('/home/api', dname) %>
+<% end %>
+
+RUN find /home/api \! -user api -o \! -group api | xargs -r chown api:api
 
 RUN runas -u api npm install
 RUN runas -u api bash -c "bundle check > /dev/null || bundle install -j2"
 
-COPY . /home/api
-RUN chown -R api:api /home/api
+COPY --chown=api:api <%= Dir.entries(ENV['BUILD_ROOT']).reject { |f| File.ftype(File.join(ENV['BUILD_ROOT'], f)) != 'file' || (f.start_with?('.') && !%w(.irbrc .ruby-version).include?(f)) || !system("cd $BUILD_ROOT && git ls-files --error-unmatch #{f} 2> /dev/null >/dev/null") || %w(Gemfile Gemfile.lock package.json package-lock.json).include?(f)}.sort.join(' ') %> /home/api/
+
+<% for dname in %w(bin .bundle config db lib public app) %>
+COPY --chown=api:api <%= dname %> <%= File.join('/home/api', dname) %>
+<% end %>
+
+RUN find /home/api \! -user api -o \! -group api | xargs -r chown api:api
 
 RUN runas -u api bundle exec rake ASSET_HOST=${ASSET_HOST} RAILS_ENV=production assets:clobber assets:precompile

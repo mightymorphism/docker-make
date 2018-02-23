@@ -1,0 +1,47 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+# Block docker access to the AWS metadata endpoint
+# Alternatively, use a metadata proxy: https://github.com/lyft/metadataproxy
+#
+# iptables -A INPUT -p tcp -d 169.254.169.254 --dport 80 --in-interface docker0 -j REJECT
+# iptables -I FORWARD -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -j DROP
+
+dockerb:
+  header: '# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved'
+  rails_config: &rails_config
+    privileged: true
+    environment:
+    - DOCKER=true
+    - SERVICE=$dockerb.service
+    - RAILS_ENV=production
+    - RAILS_SERVE_STATIC_FILES=true
+    image: sample:api-<%= package_revision %>
+    volumes:
+    - <%= ENV.fetch('BUILD_ROOT', '..') %>/bootstrap/rails:/home/api/bootstrap:ro
+
+version: "2"
+services:
+  nginx:
+    image: sample:nginx-<%= package_revision %>
+    environment:
+    - NGINX_UPSTREAM=api
+    - NGINX_VHOSTNAME=sample
+    - NGINX_HOSTNAME=sample.example.com
+    command: bash -l -c /sbin/nginx-entrypoint.sh
+    volumes:
+    - <%= ENV.fetch('BUILD_ROOT', '..') %>/bootstrap/ssl-private:/etc/ssl/private:ro
+    ports:
+    - "443:443"
+    depends_on:
+      - api
+  delayed_job:
+    <<: *rails_config
+    command: /sbin/rails-entrypoint.sh /home/api/bin/delayed_job run
+  dj_cron:
+    <<: *rails_config
+    command: /sbin/rails-entrypoint.sh /home/api/bin/dj_cron
+  api:
+    <<: *rails_config
+    command: /sbin/rails-entrypoint.sh rails server -b 0.0.0.0
+    expose:
+    - "3000"
