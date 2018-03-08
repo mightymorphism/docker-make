@@ -1,0 +1,57 @@
+#! /bin/bash
+# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+set -e
+
+while [[ $# -gt 1 ]]
+do
+	case "$1" in
+	-P|--pull) pull="$1"; shift ;;
+	-p|--profile) profile="$1"; shift ;;
+	-R|--registry) registry="$1"; shift ;;
+	-r|--region) region="$1"; shift ;;
+	-V|--app-version) revision="$1"; shift ;;
+	*) echo "Unknown option \"$1\"" 1>&2 ; exit 1 ;;
+	esac
+
+	shift
+done
+
+if [ -z "$revision" ]
+then
+	revision="0.0.3"
+fi
+
+if [ -z "$region" ]
+then
+	region="us-east-1"
+fi
+
+if [ -z "$registry" ]
+then
+	registry="${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}"
+fi
+
+if [ -z "$profile" ]
+then
+	profile="${DOCKER_AWS_PROFILE}"
+fi
+
+aws --profile ${profile} ecr get-login --no-include-email --region ${region} | bash
+
+if [ "$pull" = "true" ]
+then
+	for service in nginx api
+	do
+	        docker pull ${registry}:${service}-${revision}
+	        docker tag ${registry}:${service}-${revision} ${PACKAGE_NAME}:${service}-${revision}
+	done
+fi
+
+for service in api dj_cron delayed_job
+do
+        for op in "stop" "rm -f" "up -d"
+        do
+                docker-compose -f compose-api.yml ${op} ${service}
+        done
+done
