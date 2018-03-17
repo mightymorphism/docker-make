@@ -5,7 +5,7 @@ RAILS_ENV?=development
 compose: COMPOSE?=run api
 compose: SHELL:=/bin/bash
 compose:
-	${ROOT}/bin/compose -f $${COMPOSE_FILE:-api-dev} ${COMPOSE} ${CMD}
+	${ROOT}/bin/compose -f $${COMPOSE_FILE:-${COMPOSE_DEFAULT}} ${COMPOSE} ${CMD}
 
 compose_up:
 	$(MAKE) -C ${ROOT} compose COMPOSE=up
