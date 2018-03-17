@@ -11,7 +11,7 @@ $(foreach _, init check depend clean nuke reset, $(eval .PHONY: docker_$_))
 
 define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb
-	${ROOT}/mk/scripts/dockerb -o build/Dockerfile.${1} src/${1}.dockerb ${REVISION}
+	${ROOT}/mk/scripts/dockerb -o build/Dockerfile.${1} src/${1}.dockerb revision=${REVISION} package_name=${PACKAGE_NAME}
 
 docker_expand_${1}: build/Dockerfile.${1}
 
@@ -56,7 +56,7 @@ endif
 define DOCKER_COMPOSE_template
 .PHONY: docker_compose_${1}
 build/compose-${1}.yml: src/compose-${1}.yml.erb
-	${ROOT}/mk/scripts/dockerb -o build/compose-${1}.yml src/compose-${1}.yml.erb ${REVISION}
+	${ROOT}/mk/scripts/dockerb -o build/compose-${1}.yml src/compose-${1}.yml.erb revision=${REVISION} package_name=${PACKAGE_NAME}
 
 docker_compose_${1}: build/compose-${1}.yml
 endef

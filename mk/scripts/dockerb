@@ -111,7 +111,7 @@ args.each_pair do |var, val|
   $dockerb.local_variable_set(var.to_sym, val)
 end
 
-result = ERB.new($content).result($dockerb)
+result = ERB.new($content, nil, '-').result($dockerb)
 if $fname =~ /[.]yml([.]erb)?$/ then
   y = YAML.load(result)
   y = Hashie::Mash.new(y)
