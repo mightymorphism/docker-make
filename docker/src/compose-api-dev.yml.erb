@@ -15,7 +15,7 @@ dockerb:
     - DB_HOST=db
     - DB_PORT=5432
     - SECRET_KEY_BASE=<%= SecureRandom.hex(64) %>
-    image: sample:api-dev-<%= package_revision %>
+    image: <%= package_name %>:api-dev-<%= package_revision %>
     volumes:
     - <%= ENV['BUILD_ROOT'] %>:/home/api
     - <%= ENV['BUILD_ROOT'] %>/vendor:/home/api/vendor

@@ -2,7 +2,7 @@
 
 FROM sample:runtime-<%= package_revision %>
 
-LABEL name="sample-build"
+LABEL name="<%= package_name %>-build"
 LABEL environment="development"
 LABEL owner="Trough Creek Holdings, LLC"
 LABEL description="Sample static build toolchain image"

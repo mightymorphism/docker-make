@@ -15,14 +15,14 @@ dockerb:
     - SERVICE=$dockerb.service
     - RAILS_ENV=production
     - RAILS_SERVE_STATIC_FILES=true
-    image: sample:api-<%= package_revision %>
+    image: <%= package_name %>:api-<%= package_revision %>
     volumes:
     - <%= ENV.fetch('BUILD_ROOT', '..') %>/bootstrap/rails:/home/api/bootstrap:ro
 
 version: "2"
 services:
   nginx:
-    image: sample:nginx-<%= package_revision %>
+    image: <%= package_name %>:nginx-<%= package_revision %>
     environment:
     - NGINX_UPSTREAM=api
     - NGINX_VHOSTNAME=sample

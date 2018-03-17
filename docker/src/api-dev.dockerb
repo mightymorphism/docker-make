@@ -2,12 +2,12 @@
 
 FROM sample:build-<%= package_revision %>
 
-LABEL name="sample-api-dev"
+LABEL name="<%= package_name %>-api-dev"
 LABEL environment="development"
 LABEL owner="Trough Creek Holdings, LLC"
 LABEL description="Sample Rails API server development environment"
 
-<%= ERB.new(File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.body'))).result %>
+<%= ERB.new(File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.body')), nil, '-').result %>
 
 EXPOSE 3000
 CMD runas -u api bundle exec rails server -b 0.0.0.0

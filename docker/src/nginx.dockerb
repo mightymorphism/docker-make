@@ -2,7 +2,7 @@
 
 FROM sample:runtime-<%= package_revision %>
 
-LABEL name="sample-nginx"
+LABEL name="<%= package_name %>-nginx"
 LABEL environment="production"
 LABEL owner="Trough Creek Holdings, LLC"
 LABEL description="Sample nginx web-server"

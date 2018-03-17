@@ -2,7 +2,7 @@
 
 FROM sample:base-<%= package_revision %>
 
-LABEL name="sample-runtime"
+LABEL name="<%= package_name %>-runtime"
 LABEL environment="production"
 LABEL owner="Trough Creek Holdings, LLC"
 LABEL description="Sample runtime environment"
