@@ -21,18 +21,27 @@ TEMPDIR=`mktemp -d`
 
 trap "{ rm -Rf $TEMPDIR ;  }" EXIT
 
-for d in rails ssl-private
+bootstrap_dirs="ssl-private"
+if test -f "${BUILD_ROOT}/Gemfile"
+then
+  bootstrap_dirs="rails $bootstrap_dirs"
+fi
+
+for d in $bootstrap_dirs
 do
-	if \! test -d "${BUILD_ROOT}/bootstrap/${d}"
+	if ! test -d "${BUILD_ROOT}/bootstrap/${d}"
 	then
 		mkdir -p "${BUILD_ROOT}/bootstrap/${d}"
 		chmod 0700 "${BUILD_ROOT}/bootstrap/${d}"
 	fi
 done
 
-RAILS_ENV=production bundle exec rake admin:config:keys:gen init=true > ${BUILD_ROOT}/bootstrap/rails/secrets.yml
+if test -f "${BUILD_ROOT}/Gemfile"
+then
+	RAILS_ENV=production bundle exec rake admin:config:keys:gen init=true > ${BUILD_ROOT}/bootstrap/rails/secrets.yml
 
-cp ${BUILD_ROOT}/config/examples/database.bootstrap.yml ${BUILD_ROOT}/bootstrap/rails/database.yml
+	cp ${BUILD_ROOT}/config/examples/database.bootstrap.yml ${BUILD_ROOT}/bootstrap/rails/database.yml
+fi
 
 cd ${TEMPDIR}
 
@@ -47,4 +56,8 @@ do
 done
 
 echo "Consider changing ownership of bootstrap/ssl-private to root:root"
-echo "Don't forget to update bootstrap/rails/database.yml"
+
+if test -f "${BUILD_ROOT}/Gemfile"
+then
+	echo "Don't forget to update bootstrap/rails/database.yml"
+fi
