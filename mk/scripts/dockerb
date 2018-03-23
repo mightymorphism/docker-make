@@ -11,6 +11,22 @@ require 'optparse'
 require 'tempfile'
 require 'hashie/mash'
 
+def ostructify(val)
+  if val.is_a?(String) || val.is_a?(Numeric) then
+  elsif val.is_a?(Array) then
+    val.map! do |v|
+      ostructify(v)
+    end
+  elsif val.is_a?(Hash) then
+    val.each_pair do |k, v|
+      val[k] = ostructify(v)
+    end
+    val = OpenStruct.new(val)
+  end
+
+  return val
+end
+
 def walk_config(c, path)
   service_name = nil
   i = path.index("services")
@@ -49,6 +65,9 @@ options.output_file = nil
 
 opt = OptionParser.new do |opts|
   opts.banner = "usage: dockerb [-o <output-file>] <file> <revision>|<var=val...>"
+  opts.on("-c", "--config", "Configuration file", :REQUIRED) do |fname|
+    options.config_file = fname
+  end
   opts.on("-v", "--version", "Print version", :NONE) do
     options.version = true
   end
@@ -71,12 +90,10 @@ if options.version then
   exit(0)
 end
 
-
 if ARGV.length < 2 then
   $stderr.puts opt.banner
   Kernel.exit(1)
 end
-
 
 $fname = ARGV[0]
 if !File.exists?($fname) then
@@ -99,6 +116,26 @@ ARGV[1..-1].each_with_index do |arg, i|
     Kernel.exit(1)
   else
     args[var] = val
+  end
+end
+
+if options.config_file then
+  if !File.exists?(options.config_file) then
+    $stderr.puts "Config file #{options.config_file.inspect} does not exist"
+    Kernel.exit(1)
+  end
+
+  File.open(options.config_file, 'r') do |f|
+    content = ERB.new(f.read, nil, '-').result($dockerb)
+    c = YAML.load(content)
+    if !c.is_a?(Hash) then
+      $stderr.puts "Config file #{options.config_file.inspect} is not a hash"
+      Kernel.exit(1)
+    end
+    c.each_pair do |var, val|
+      c[var] = ostructify(val)
+    end
+    args = c.merge(args)
   end
 end
 
