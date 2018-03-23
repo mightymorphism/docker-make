@@ -13,13 +13,13 @@ ${ROOT}/docker/build/Dockerfile.runtime: ${ROOT}/docker/src/runtime.dockerb
 docker_build_api-dev: docker_build_build
 docker_build_api-dev: ${ROOT}/docker/build/Dockerfile.api-dev
 ${ROOT}/docker/build/Dockerfile.api-dev: ${ROOT}/docker/src/api-dev.dockerb
-src/nginx.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/api.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/build.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/runtime.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/base.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/api-dev.dockerb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-build/compose-api.yml: src/compose-api.yml.erb
-build/compose-api-dev.yml: src/compose-api-dev.yml.erb
-src/compose-api.yml.erb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
-src/compose-api-dev.yml.erb: /home/wkj/src/morphisms/docker-make/mk/../REVISION
+src/nginx.dockerb: ./../REVISION
+src/api.dockerb: ./../REVISION
+src/build.dockerb: ./../REVISION
+src/runtime.dockerb: ./../REVISION
+src/base.dockerb: ./../REVISION
+src/api-dev.dockerb: ./../REVISION
+build/compose-api.yml: src/compose-api.yml.erb ./../REVISION
+build/compose-api-dev.yml: src/compose-api-dev.yml.erb ./../REVISION
+src/compose-api.yml.erb: ./../REVISION
+src/compose-api-dev.yml.erb: ./../REVISION

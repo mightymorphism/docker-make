@@ -68,7 +68,7 @@ endif
 docker_depend:
 	(cd ${ROOT} && ${ROOT}/mk/scripts/docker-deps -p ${DOCKER_NS} -f make gen docker) > Makefile.deps
 	for t in ${DOCKER_CONTAINERS} ; do echo src/$${t}.dockerb: ${REL_ROOT}/REVISION >> Makefile.deps ; done
-	for t in ${DOCKER_COMPOSITIONS} ; do echo build/compose-$${t}.yml: src/compose-$${t}.yml.erb >> Makefile.deps ; done
+	for t in ${DOCKER_COMPOSITIONS} ; do echo build/compose-$${t}.yml: src/compose-$${t}.yml.erb ${REL_ROOT}/REVISION >> Makefile.deps ; done
 	for t in ${DOCKER_COMPOSITIONS} ; do echo src/compose-$${t}.yml.erb: ${REL_ROOT}/REVISION >> Makefile.deps ; done
 
 docker_compile: $(patsubst %, docker_expand_%, ${DOCKER_CONTAINERS}) $(patsubst %, docker_compose_%, ${DOCKER_COMPOSITIONS})
