@@ -30,7 +30,12 @@ mkdir -p ${package_name} && cd ${package_name}
 mkdir -p DEBIAN \
   usr/bin
 
-cp ${BUILD_ROOT}/bin/${PACKAGE_NAME}  usr/bin/
+if [ -f ${BUILD_ROOT}/config/pkg-manifest ]
+then
+  awk -vBUILD_ROOT="${BUILD_ROOT}" '{ printf("cp %s/%s %s\n", BUILD_ROOT, $1, $2); }' config/pkg-manifest | bash -x
+else
+  cp ${BUILD_ROOT}/bin/${PACKAGE_NAME}  usr/bin/
+fi
 
 # Debian packaging files
 for f in conffiles control postinst prerm
