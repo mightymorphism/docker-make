@@ -22,6 +22,10 @@ TEMPDIR=`mktemp -d`
 trap "{ rm -Rf $TEMPDIR ;  }" EXIT
 
 bootstrap_dirs="ssl-private"
+if test -f "${BUILD_ROOT}/requirements.txt"
+then
+  bootstrap_dirs="python $bootstrap_dirs"
+fi
 if test -f "${BUILD_ROOT}/Gemfile"
 then
   bootstrap_dirs="rails $bootstrap_dirs"
@@ -41,6 +45,11 @@ then
 	RAILS_ENV=production bundle exec rake admin:config:keys:gen init=true > ${BUILD_ROOT}/bootstrap/rails/secrets.yml
 
 	cp ${BUILD_ROOT}/config/examples/database.bootstrap.yml ${BUILD_ROOT}/bootstrap/rails/database.yml
+fi
+
+if test -f "${BUILD_ROOT}/requirements.txt"
+then
+	cp -n ${BUILD_ROOT}/config/config.yml ${BUILD_ROOT}/bootstrap/python
 fi
 
 cd ${TEMPDIR}
