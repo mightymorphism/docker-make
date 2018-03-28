@@ -97,6 +97,9 @@ class DockerDep < Hash
     mk_rules = []
     deps = fetch(:make_deps, [])
     if !deps.empty? then
+      deps.each do |dep|
+        mk_rules << "docker_nuke_#{dep}: docker_nuke_#{fetch(:name)}"
+      end
       mk_deps = deps.map { |d| "docker_build_#{d}" }
       mk_rules << "docker_build_#{fetch(:name)}: " + mk_deps.join(' ')
 

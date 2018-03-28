@@ -1,15 +1,20 @@
+docker_nuke_runtime: docker_nuke_nginx
 docker_build_nginx: docker_build_runtime
 docker_build_nginx: ${ROOT}/docker/build/Dockerfile.nginx
 ${ROOT}/docker/build/Dockerfile.nginx: ${ROOT}/docker/src/nginx.dockerb
+docker_nuke_runtime: docker_nuke_api
 docker_build_api: docker_build_runtime
 docker_build_api: ${ROOT}/docker/build/Dockerfile.api
 ${ROOT}/docker/build/Dockerfile.api: ${ROOT}/docker/src/api.dockerb
+docker_nuke_runtime: docker_nuke_build
 docker_build_build: docker_build_runtime
 docker_build_build: ${ROOT}/docker/build/Dockerfile.build
 ${ROOT}/docker/build/Dockerfile.build: ${ROOT}/docker/src/build.dockerb
+docker_nuke_base: docker_nuke_runtime
 docker_build_runtime: docker_build_base
 docker_build_runtime: ${ROOT}/docker/build/Dockerfile.runtime
 ${ROOT}/docker/build/Dockerfile.runtime: ${ROOT}/docker/src/runtime.dockerb
+docker_nuke_build: docker_nuke_api-dev
 docker_build_api-dev: docker_build_build
 docker_build_api-dev: ${ROOT}/docker/build/Dockerfile.api-dev
 ${ROOT}/docker/build/Dockerfile.api-dev: ${ROOT}/docker/src/api-dev.dockerb
@@ -19,7 +24,7 @@ src/build.dockerb: ./../REVISION
 src/runtime.dockerb: ./../REVISION
 src/base.dockerb: ./../REVISION
 src/api-dev.dockerb: ./../REVISION
-build/compose-api.yml: src/compose-api.yml.erb ./../REVISION
-build/compose-api-dev.yml: src/compose-api-dev.yml.erb ./../REVISION
+build/compose-api.yml: src/compose-api.yml.erb
+build/compose-api-dev.yml: src/compose-api-dev.yml.erb
 src/compose-api.yml.erb: ./../REVISION
 src/compose-api-dev.yml.erb: ./../REVISION
