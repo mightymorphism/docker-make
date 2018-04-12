@@ -5,6 +5,7 @@ $(foreach _, init check clean nuke reset, $(eval $_: venv_$_))
 $(foreach _, init check clean nuke reset, $(eval .PHONY: venv_$_))
 
 VENV_ROOT := ${ROOT}/vendor/virtualenv
+export VENV_ROOT
 
 venv_check:
 	@if [ "$${VIRTUAL_ENV}" != "${VENV_ROOT}" ] ; then		\
@@ -13,9 +14,14 @@ venv_check:
 	fi
 
 venv_init:
-	@if [ \! -f ${VENV_ROOT}/bin/activate ] ; then		\
-		virtualenv --no-site-packages ${VENV_ROOT};	\
+#	python3 -m venv ${VENV_ROOT}
+	@if [ \! -f ${VENV_ROOT}/bin/activate ] ; then	\
+                virtualenv --no-site-packages ${VENV_ROOT};     \
 	fi
+
+venv_install: venv_check
+	pip install --upgrade --user wheel
+	pip install --upgrade --user -r requirements.txt
 
 venv_clean:
 	rm -f *.pyc

@@ -1,0 +1,22 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+#
+# Make python_* dependency of non-python version
+$(foreach _, init check clean nuke reset, $(eval $_: python_$_))
+$(foreach _, init check clean nuke reset, $(eval .PHONY: python_$_))
+
+include ${ROOT}/mk/Makefile.venv
+
+python_check:
+	@if [ -z "$${VIRTUALENV}" ] ; then				\
+		echo "virtualenv not (properly) activated" 1>&2 ;	\
+		exit 1 ;						\
+	fi
+
+python_init: python_check
+
+python_clean:
+
+python_nuke: python_clean
+	find . -path ./vendor -prune -o \( -type d -a -name __pycache__ \) -print0 | xargs -0 rm -Rf
+
+python_reset: python_clean

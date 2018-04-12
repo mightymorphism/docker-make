@@ -1,0 +1,34 @@
+# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+heroku_logs:
+	heroku logs -a ${HEROKU_APP_NAME}
+
+heroku_docker_login:
+	heroku auth:token | docker login --username=_ --password-stdin registry.heroku.com
+
+heroku_docker_images:
+	docker images "${HEROKU_REGISTRY}/${HEROKU_REPOSITORY}"
+
+define HEROKU_BUILD_template
+heroku_remote_tag_${1}: docker_tag_${1}
+	docker tag ${DOCKER_NS}:${1}-${REVISION} ${HEROKU_REGISTRY}/${HEROKU_REPOSITORY}:${1}-${REVISION}
+
+heroku_remote_push_${1}: heroku_remote_tag_${1}
+	docker push ${HEROKU_REGISTRY}/${HEROKU_REPOSITORY}:${1}-${REVISION}
+endef
+
+ifndef HEROKU_REMOTE_CONTAINERS
+HEROKU_REMOTE_CONTAINERS := ${HEROKU_CONTAINERS}
+endif
+
+ifdef HEROKU_REMOTE_CONTAINERS
+$(foreach t, ${HEROKU_REMOTE_CONTAINERS}, $(eval $(call HEROKU_BUILD_template,$t)))
+endif
+
+heroku_remote_tag: $(patsubst %, heroku_remote_tag_%, ${HEROKU_REMOTE_CONTAINERS})
+
+heroku_remote_push: $(patsubst %, heroku_remote_push_%, ${HEROKU_REMOTE_CONTAINERS})
+
+heroku_cleanup: docker_cleanup
+	docker images "${HEROKU_REGISTRY}/${HEROKU_REPOSITORY}" --format "{{.Repository}}:{{.Tag}}" | grep -v ':<none>$$' | xargs -r -n 1 docker rmi
+	docker images "${HEROKU_REGISTRY}/${HEROKU_REPOSITORY}" --format "{{.Digest}}" | xargs -r -n 1 docker rmi

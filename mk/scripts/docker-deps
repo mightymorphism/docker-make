@@ -171,13 +171,21 @@ when 'list'
   tgts = []
   docker_deps.each_pair do |name, dep|
     ok = options.labels.empty? && options.environment.nil?
+
+    env_ok = options.environment.nil?
     if options.environment then
-      ok ||= dep[:labels]['environment'] == options.environment
+      env_ok ||= dep[:labels]['environment'] == options.environment
     end
+
+    label_ok = options.labels.empty?
     dep[:labels].each_pair do |k, v|
-      ok ||= options.labels.any? { |kk, vv| kk == k && vv == v }
+       label_ok ||= options.labels.any? do |kk, vv|
+         kk == k && vv == v
+      end
     end
-    if ok then
+
+    select_ok = env_ok && label_ok
+    if ok || select_ok then
       tgts << name
     end
   end
