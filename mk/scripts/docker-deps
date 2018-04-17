@@ -90,6 +90,7 @@ class DockerDep < Hash
   def initialize
     super
     store(:deps, [])
+    store(:labels, {})
     store(:make_deps, [])
   end
 
@@ -114,6 +115,46 @@ class DockerDep < Hash
   end
 end
 
+def key_pair_split(line)
+  result = Hash.new
+  state = :unquoted
+
+  cur_tok = ''
+  cur_key = ''
+
+  line.chars do |c|
+    if state == :unquoted
+      case c
+      when '='
+        cur_key = cur_tok
+        cur_tok = ""
+      when ' '
+        result[cur_key] = cur_tok
+        cur_key = cur_tok = ''
+      when '"'
+        state = :quoted
+      else
+        cur_tok << c
+      end
+    elsif state == :quoted
+      case c
+      when '"'
+        cur_tok << ""
+        state = :unquoted
+      when '\\'
+        state = :escaped
+      else
+        cur_tok << c
+      end
+    elsif state == :escaped
+      cur_tok << c
+      state = :quoted
+    end
+  end
+  result[cur_key] = cur_tok
+  return result
+end
+
 docker_deps = Hash.new { |h, k| h[k] = DockerDep.new }
 
 docker_files.each do |fname|
@@ -128,7 +169,19 @@ docker_files.each do |fname|
   end
 
   File.open(fname, 'r') do |f|
+    lines = []
     f.each_line do |line|
+      line.sub!(/^\s+/, ' ')
+      line.sub!(/\s+$/, '')
+      if line[-1] == '\\' then
+        line.sub!(/\s+\\$/, '')
+        lines.last << line
+        next
+      else
+        lines << line
+      end
+    end
+    lines.each do |line|
       # FROM line must be of the following form:
       #       FROM prefix:image-version
       # Where:
@@ -157,10 +210,11 @@ docker_files.each do |fname|
           docker_deps[name][:make_deps] << src.sub(/^#{prefix}:/, '')
         end
       elsif line =~ /^\s*LABEL/ then
-        # only supports one key/value pair per line and no embedded newlines
-        kw, val = line.strip.split(/\s+/, 2)
-        label, value = val.split(/=/, 2)
-        docker_deps[name][:labels][label] = value[1...-1]
+        kw, line = line.strip.split(/\s+/, 2)
+        key_pairs = key_pair_split(line)
+        key_pairs.each_pair do |k, v|
+          docker_deps[name][:labels][k] = v
+        end
       end
     end
   end

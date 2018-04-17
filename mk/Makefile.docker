@@ -3,6 +3,7 @@
 # NB: requires "experimental" mode because Docker is dumb as rocks
 ifneq (${DOCKER_SQUASH},)
 DOCKER_SQUASH:=--squash
+export DOCKER_SQUASH
 endif
 
 # Make docker_* dependency of non-docker version

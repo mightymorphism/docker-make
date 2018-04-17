@@ -1,5 +1,7 @@
 # Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
+.PHONY: heroku_logs heroku_docker_login heroku_docker_images heroku_remote_push
+
 heroku_logs:
 	heroku logs -a ${HEROKU_APP_NAME}
 
