@@ -13,13 +13,17 @@ do
 done
 
 force=""
+build_args=""
 
 while [[ $# -gt 1 ]]
 do
 	case "$1" in
-	-f|--force) force="true"; shift ;;
+        -a|--build-arg) build_args="$build_args --build-arg $2"; shift ;;
+	-f|--force) force="true"; ;;
 	*) echo "Unknown option \"$1\"" 1>&2 ; exit 1 ;;
 	esac
+
+	shift
 done
 
 
@@ -37,7 +41,8 @@ then
 else
 	echo "Building ${docker_image}"
 	cd ${BUILD_ROOT}
-	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" -t "${docker_image}" .
+	echo docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" ${build_args} -t "${docker_image}" .
+	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" ${build_args} -t "${docker_image}" .
 	echo "${REVISION}" > "${docker_rev_stamp}"
 	echo "${BUILD_DATE}" > "${docker_time_stamp}"
 fi

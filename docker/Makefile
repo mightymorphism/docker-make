@@ -28,5 +28,8 @@ list_remote:
 list_heroku:
 	@echo ${HEROKU_CONTAINERS}
 
+labels:
+	docker inspect --format '{{json .ContainerConfig.Labels}}' ${PACKAGE_NAME}:$(or ${C},api)-${REVISION}|jq
+
 rebuild_api:
 	${MAKE} docker_rebuild_api && ${MAKE} docker_remote_push && ${MAKE} docker_rebuild_api-dev && ${MAKE} docker_cleanup
