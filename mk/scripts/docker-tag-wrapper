@@ -1,0 +1,103 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+# FUTURE: consider retagging via AWS API for ECR targets
+# https://docs.aws.amazon.com/AmazonECR/latest/userguide/retag-aws-cli.html
+
+#	#{ROOT}/mk/scripts/docker-tag-wrapper remote #{DOCKER_REGISTRY} #{DOCKER_REPOSITORY} #{DOCKER_NS} #{1} #{REVISION}
+
+require 'time'
+require 'ostruct'
+
+$args = OpenStruct.new
+$args.label_latest = false
+$args.label_ecr = false
+
+while ARGV[0] && ARGV[0].start_with?('--') do
+  opt = ARGV.shift
+  case opt
+  when '--label-latest'
+    $args.label_latest = true
+  when '--label-ecr'
+    $args.label_ecr = true
+  end
+end
+
+%w(verb registry repository ns image revision).each_with_index do |var, i|
+   if ARGV[i].nil? || ARGV[i].empty? then
+     $stderr.puts "Missing argument: #{var.inspect}"
+     $stderr.puts "Usage: docker-tag-wrapper <verb> <$args.registry> <repo> <ns> <$args.image> <$args.revision>"
+     exit(1)
+   end
+
+   case var
+   when 'verb'
+     $args[var.to_sym] = ARGV[i]
+   else
+     $args[var.to_sym] = ARGV[i]
+   end
+end
+
+$args.branch = `git rev-parse --abbrev-ref HEAD`
+if $? != 0 || $args.branch.nil? || $args.branch.empty? then
+  $stderr.puts "Unable to retrieve current branch"
+  exit(1)
+else
+  $args.branch.chomp!
+end
+
+$args.build_sha = `git rev-parse HEAD`
+if $? != 0 || $args.build_sha.nil? || $args.build_sha.empty? then
+  $stderr.puts "Unable to retrieve commit ID"
+  exit(1)
+else
+  $args.build_sha.chomp!
+  $args.build_sha = $args.build_sha[0...8]
+end
+
+$args.build_date = `docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}`
+if $? != 0 || $args.build_date.nil? || $args.build_date.empty? then
+  $stderr.puts "Unable to retrieve build time stamp"
+  exit(1)
+else
+  $args.build_date.chomp!
+
+  # Remove colons from timestamp to avoid munging Docker tag
+  $args.build_date = Time.parse($args.build_date).gmtime.strftime("%Y-%m-%dT%H%M%S")
+end
+
+tag_list = []
+tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
+
+if $args.label_ecr then
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}"
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-build-#{$args.build_date}"
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.branch}-#{$args.build_sha}"
+end
+
+if $args.label_latest then
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-latest"
+end
+
+tag_commands = tag_list.map do |t|
+  "docker tag #{$args.ns}:#{$args.image}-#{$args.revision} #{t}"
+end
+
+push_commands = tag_list.map do |t|
+  "docker push #{t}"
+end
+
+commands = []
+case $args.verb
+when 'tag'
+  commands = tag_commands
+when 'push'
+  commands = push_commands
+end
+
+commands.each do |cmd|
+  if !Kernel.system(cmd) then
+    $stderr.puts "Failed: #{cmd.inspect}"
+    exit(1)
+  end
+end

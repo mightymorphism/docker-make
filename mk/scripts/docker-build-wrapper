@@ -33,6 +33,8 @@ docker_time_stamp="${CURDIR}/build/.stamp.time.${docker_name}"
 docker_rev_stamp="${CURDIR}/build/.stamp.revision.${docker_name}"
 docker_image="${DOCKER_NS}:${docker_name}-${REVISION}"
 
+current_commit_id=`git rev-parse HEAD`
+
 build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}' ${docker_image} 2> /dev/null || echo ''`
 
 if test -z "${force}" && test -f "${docker_rev_stamp}" && test -s "${docker_rev_stamp}" && cmp -s "${BUILD_ROOT}/REVISION" "${docker_rev_stamp}" && test -f "${docker_time_stamp}" && test -s "${docker_time_stamp}" && test -n "${build_time}" && (echo "${build_time}" | cmp -s "${docker_time_stamp}")
@@ -41,8 +43,9 @@ then
 else
 	echo "Building ${docker_image}"
 	cd ${BUILD_ROOT}
-	echo docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" ${build_args} -t "${docker_image}" .
-	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" ${build_args} -t "${docker_image}" .
+	echo docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" -t "${docker_image}" .
+	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" -t "${docker_image}" .
+
 	echo "${REVISION}" > "${docker_rev_stamp}"
 	echo "${BUILD_DATE}" > "${docker_time_stamp}"
 fi
