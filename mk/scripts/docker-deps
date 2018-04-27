@@ -13,6 +13,7 @@ options.labels = []
 options.environment = nil
 options.version = false
 options.format = 'make'
+options.docker_root_path = "${ROOT}/${REL_CURDIR}/.." 
 
 opt = OptionParser.new do |opts|
   opts.banner = "usage: docker-deps [-p PREFIX] <dirs|files..>"
@@ -34,6 +35,10 @@ opt = OptionParser.new do |opts|
   end
   opts.on("-p", "--prefix", "Set prefix", :REQUIRED) do |p|
      options.prefix << p
+  end
+
+  opts.on("-r", "--docker-root-path", "Set docker root", :OPTIONAL) do |p|
+     options.docker_root_path = p
   end
 end
 
@@ -94,7 +99,7 @@ class DockerDep < Hash
     store(:make_deps, [])
   end
 
-  def generate_make_rule
+  def generate_make_rule(options)
     mk_rules = []
     deps = fetch(:make_deps, [])
     if !deps.empty? then
@@ -104,8 +109,8 @@ class DockerDep < Hash
       mk_deps = deps.map { |d| "docker_build_#{d}" }
       mk_rules << "docker_build_#{fetch(:name)}: " + mk_deps.join(' ')
 
-      mk_rules << "docker_build_#{fetch(:name)}: ${ROOT}/#{fetch(:dst_path)}"
-      mk_rules << "${ROOT}/#{fetch(:dst_path)}: ${ROOT}/#{fetch(:src_path)}"
+      mk_rules << "docker_build_#{fetch(:name)}: #{options.docker_root_path}/#{fetch(:dst_path)}"
+      mk_rules << "#{options.docker_root_path}/#{fetch(:dst_path)}: #{options.docker_root_path}/#{fetch(:src_path)}"
     end
 
     if !mk_rules.empty? then
@@ -255,7 +260,7 @@ when 'gen'
 
   when 'make'
     docker_deps.each_pair do |name, dep|
-      mk_rule = dep.generate_make_rule
+      mk_rule = dep.generate_make_rule(options)
       if mk_rule then
         puts "#{mk_rule}\n"
       end
