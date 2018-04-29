@@ -13,7 +13,7 @@ options.labels = []
 options.environment = nil
 options.version = false
 options.format = 'make'
-options.docker_root_path = "${ROOT}/${REL_CURDIR}/.." 
+options.docker_root_path = "${ROOT}/${REL_CURDIR}/.."
 
 opt = OptionParser.new do |opts|
   opts.banner = "usage: docker-deps [-p PREFIX] <dirs|files..>"
@@ -175,14 +175,21 @@ docker_files.each do |fname|
 
   File.open(fname, 'r') do |f|
     lines = []
+    escaping = false
     f.each_line do |line|
       line.sub!(/^\s+/, ' ')
       line.sub!(/\s+$/, '')
       if line[-1] == '\\' then
         line.sub!(/\s+\\$/, '')
-        lines.last << line
+        if escaping then
+          lines.last << line
+        else
+          lines << line
+        end
+        escaping = true
         next
       else
+        escaping = false
         lines << line
       end
     end
@@ -193,7 +200,7 @@ docker_files.each do |fname|
       # * prefix will be the project name and docker repo name
       # * image will be role that this image is built from
       # * version may be an ERB expression
-      if line =~ /^\s*FROM/ || line =~ /^\s*#\s*DOCKERB_DEP/ then
+      if line =~ /^\s*FROM/ #|| line =~ /^\s*#\s*DOCKERB_DEP/ then
         line.sub!(/^\s*#\s*/, '')
         kw, arg, _ = line.split(/\s+/)
         src, version = arg.reverse.split(/-/, 2).map(&:reverse).reverse
