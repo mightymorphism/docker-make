@@ -193,7 +193,8 @@ docker_files.each do |fname|
       # * prefix will be the project name and docker repo name
       # * image will be role that this image is built from
       # * version may be an ERB expression
-      if line =~ /^\s*FROM/ then
+      if line =~ /^\s*FROM/ || line =~ /^\s*#\s*DOCKERB_DEP/ then
+        line.sub!(/^\s*#\s*/, '')
         kw, arg, _ = line.split(/\s+/)
         src, version = arg.reverse.split(/-/, 2).map(&:reverse).reverse
         prefix = options.prefix.find { |p| src =~ /^#{p}:/ }
