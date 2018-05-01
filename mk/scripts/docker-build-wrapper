@@ -44,7 +44,7 @@ else
 	echo "Building ${docker_image}"
 	cd ${BUILD_ROOT}
 	echo docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" -t "${docker_image}" .
-	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" -t "${docker_image}" .
+	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" --label "docker_ns=${DOCKER_NS}" -t "${docker_image}" .
 
 	echo "${REVISION}" > "${docker_rev_stamp}"
 	echo "${BUILD_DATE}" > "${docker_time_stamp}"
