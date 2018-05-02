@@ -100,7 +100,13 @@ docker_logout:
 	docker logout ${DOCKER_REGISTRY}
 
 docker_remote_list:
-	docker images https://${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}
+	docker images ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}
 
 docker_bootstrap_init:
 	${BUILD_ROOT}/mk/scripts/bootstrap-init
+
+docker_images:
+	docker images -f "label=docker_ns=${DOCKER_NS}"
+
+docker_labels:
+	docker inspect --format '{{json .ContainerConfig.Labels}}' ${PACKAGE_NAME}:$(or ${C},${COMPOSE_DEFAULT})-${REVISION}|jq
