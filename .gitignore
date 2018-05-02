@@ -11,7 +11,7 @@ nohup.out
 
 .bundle
 .irb-history
-.ruby-gemset
+.ruby-*
 .bash_history
 .lesshst
 .viminfo
@@ -19,23 +19,7 @@ nohup.out
 
 /tmp/*
 
-/db/*schema.rb
-/db/*structure.sql
-/db/*development_structure.sql
-
 /docker/build/Dockerfile.*
 /docker/build/compose-*.yml
 
-/dev/*
-/log/*
-/coverage
-
 /mk/Makefile.cfg.local
-
-/public/deploy
-/public/assets
-
-vendor/ruby
-vendor/bundle
-vendor/cache/*
-!vendor/cache/*.gem
