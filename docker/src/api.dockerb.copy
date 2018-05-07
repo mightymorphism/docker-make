@@ -1,0 +1,23 @@
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+RUN groupadd -r ruby
+RUN useradd -m -G ruby -s /bin/bash api
+
+<% for dname in %w(vendor/bundle node_modules) do -%>
+COPY --chown=api:api --from=api_build /home/api/<%= dname %> /home/api/<%= dname %>
+<% end -%>
+
+COPY docker/script/python-entrypoint.sh docker/script/python-setup.sh /sbin/
+
+<% for name in %w(.bashrc .bundle .npm .ruby-version) do -%>
+COPY --chown=api:api --from=api_build /home/api/<%= name %> /home/api/<%= name %>
+<% end -%>
+
+<% for dname in files_by_type(ENV['BUILD_ROOT'], 'directory', '[^.]*', %w(docker bootstrap mk vendor node_modules tmp)).sort -%>
+COPY --chown=api:api --from=api_build /home/api/<%= dname %> /home/api/<%= dname %>
+<% end -%>
+
+COPY --chown=api:api --from=api_build <%= files_by_type(ENV['BUILD_ROOT'], 'file', '[^.]*', [], %w(.bashrc .ruby-version)).map {|f| File.join('/home/api', f) }.join(' ') %> /home/api/
+
+USER api
+WORKDIR /home/api

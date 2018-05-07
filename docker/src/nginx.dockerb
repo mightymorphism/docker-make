@@ -1,11 +1,13 @@
-# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
-FROM sample:runtime-<%= package_revision %>
+FROM sample:base-<%= package_revision %>
 
-LABEL name="<%= package_name %>-nginx"
-LABEL environment="production"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample nginx web-server"
+LABEL name="<%= package_name %>-nginx"			\
+	environment="production"			\
+	runtime.compose="true"				\
+	runtime.docker="false"				\
+	owner="Trough Creek Holdings, LLC"		\
+	description="Sample nginx web-server"
 
 COPY <%= %w(install-nginx.sh nginx-entrypoint.sh nginx-500.html nginx-site.erb nginx.conf).map { |f| File.join('docker/script', f) }.join(' ') %> /root/
 

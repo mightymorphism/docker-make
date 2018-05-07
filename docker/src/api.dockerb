@@ -1,13 +1,26 @@
 # Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
-FROM sample:runtime-<%= package_revision %>
+<% load File.join(ENV['BUILD_ROOT'], 'docker/src/helpers.rb') -%>
 
-LABEL name="<%= package_name %>-api"
-LABEL environment="production"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample Rails API server environment"
+FROM sample:build-<%= package_revision %> as api_build
+
+LABEL name="<%= package_name %>-api_build"	\
+	environment="production"		\
+	runtime.docker="false"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample Rails API server builder environment"
 
 <%= ERB.new(File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.body')), nil, '-').result %>
+
+FROM sample:runtime-<%= package_revision %>
+
+LABEL name="<%= package_name %>-api"		\
+	environment="production"		\
+	runtime.docker="true"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample Rails API server environment"
+
+<%= ERB.new(File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.copy')), nil, '-').result %>
 
 EXPOSE 3000
 CMD runas -u api bundle exec rails server -b 0.0.0.0

@@ -1,5 +1,5 @@
 #! /bin/bash
-# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
 set -e
 
@@ -27,9 +27,11 @@ apt-get install -y runas
 apt-get clean
 
 localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+update-locale LANG=en_US.UTF-8
 
 export LOCALE="en_US.utf8"
 echo 'export LOCALE=en_US.utf8' >> /etc/profile.d/locale.sh
+echo 'export LANG=en_US.utf8' >> /etc/profile.d/locale.sh
 
 # Update the set of installed CA certs
 /usr/sbin/update-ca-certificates

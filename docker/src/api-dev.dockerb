@@ -1,11 +1,15 @@
 # Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
+<% load File.join(ENV['BUILD_ROOT'], 'docker/src/helpers.rb') -%>
+
 FROM sample:build-<%= package_revision %>
 
-LABEL name="<%= package_name %>-api-dev"
-LABEL environment="development"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample Rails API server development environment"
+LABEL name="<%= package_name %>-api-dev"	\
+	environment="production"		\
+	runtime.docker="false"			\
+	runtime.compose="true"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample Rails API server environment"
 
 <%= ERB.new(File.read(File.join(ENV['BUILD_ROOT'] , 'docker/src/api.dockerb.body')), nil, '-').result %>
 

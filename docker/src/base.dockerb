@@ -2,20 +2,20 @@
 
 FROM ubuntu:16.04
 
-LABEL name="<%= package_name %>-base"
-LABEL environment="production"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample base environment with common dependencies"
-
-WORKDIR /root
+LABEL name="<%= package_name %>-base"		\
+	environment="production"		\
+	runtime.docker="true"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample base environment"
 
 RUN mkdir -p /etc/build
 
 COPY bin/cfg-version /usr/local/bin
 COPY config/versions.yml REVISION /etc/build/
 
-COPY docker/script/package-maintainer.asc /root
+COPY docker/script/package-maintainer.asc	\
+	docker/script/install-base.sh		\
+	/root/
 COPY docker/script/morphisms.list /etc/apt/sources.list.d
-COPY docker/script/install-base.sh /root/install-base.sh
 
 RUN bash -l /root/install-base.sh

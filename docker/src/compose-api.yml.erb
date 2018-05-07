@@ -26,7 +26,7 @@ services:
     environment:
     - NGINX_UPSTREAM=api
     - NGINX_VHOSTNAME=sample
-    - NGINX_HOSTNAME=sample.example.com
+    - NGINX_HOSTNAME=sample.morphisms.net
     command: bash -l -c /sbin/nginx-entrypoint.sh
     volumes:
     - <%= ENV.fetch('BUILD_ROOT', '..') %>/bootstrap/ssl-private:/etc/ssl/private:ro
@@ -43,5 +43,3 @@ services:
   api:
     <<: *rails_config
     command: /sbin/rails-entrypoint.sh rails server -b 0.0.0.0
-    expose:
-    - "3000"

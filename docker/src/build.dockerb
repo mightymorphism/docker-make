@@ -1,16 +1,30 @@
 # Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
 
-FROM sample:runtime-<%= package_revision %>
+FROM sample:base-<%= package_revision %>
 
-LABEL name="<%= package_name %>-build"
-LABEL environment="development"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample static build toolchain image"
+LABEL name="<%= package_name %>-build"		\
+	environment="development"		\
+	runtime.docker="false"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample build environment"
+
 
 WORKDIR /root
 
-COPY docker/script/install-jdk.sh docker/script/install-golang.sh /root/
+COPY docker/script/install-dev-runtime.sh	\
+	docker/script/install-dev-build.sh	\
+	docker/script/build-ruby.sh		\
+	docker/script/install-jdk.sh		\
+	docker/script/install-golang.sh		\
+	docker/script/install-nodejs.sh		\
+	/root/
+
 
 RUN apt-get install -y vim less
+
+RUN bash -l /root/install-dev-runtime.sh
+RUN bash -l /root/install-dev-build.sh
+RUN bash -l /root/build-ruby.sh
 RUN bash -l /root/install-jdk.sh
 RUN bash -l /root/install-golang.sh
+RUN bash -l /root/install-nodejs.sh

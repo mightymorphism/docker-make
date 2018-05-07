@@ -1,19 +1,27 @@
 # Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
 
+# DOCKERB_DEP sample:build-<%= package_revision %>
 FROM sample:base-<%= package_revision %>
 
-LABEL name="<%= package_name %>-runtime"
-LABEL environment="production"
-LABEL owner="Trough Creek Holdings, LLC"
-LABEL description="Sample runtime environment"
+LABEL name="<%= package_name %>-build"		\
+	environment="development"		\
+	runtime.docker="true"			\
+	owner="Trough Creek Holdings, LLC"	\
+	description="Sample runtime environment"
+
 
 WORKDIR /root
 
-COPY docker/script/install-dev-common.sh \
-     docker/script/build-ruby.sh \
-     docker/script/install-nodejs.sh \
-     /root/
+COPY docker/script/install-dev-runtime.sh	\
+	/root/
 
-RUN bash -l /root/install-dev-common.sh
-RUN bash -l /root/build-ruby.sh
-RUN bash -l /root/install-nodejs.sh
+
+RUN apt-get install -y vim less
+
+RUN bash -l /root/install-dev-runtime.sh
+
+COPY --from=sample:build-<%= package_revision %> /etc/profile.d/* /etc/profile.d/
+
+<% for dname in %w(ruby nodejs) do -%>
+COPY --from=sample:build-<%= package_revision %> /usr/local/<%= dname %> /usr/local/<%= dname %>
+<% end -%>
