@@ -55,6 +55,9 @@ if !File.exists?(cfg_path) then
 end
 
 versions = YAML.load_file(cfg_path)
+if versions == false then
+  versions = {}
+end
 
 value = versions.fetch(depname, options.default)
 
