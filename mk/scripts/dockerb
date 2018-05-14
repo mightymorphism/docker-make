@@ -115,7 +115,7 @@ ARGV[1..-1].each_with_index do |arg, i|
     $stderr.puts opt.banner
     Kernel.exit(1)
   else
-    args[var] = val
+    args[var.downcase] = val
   end
 end
 

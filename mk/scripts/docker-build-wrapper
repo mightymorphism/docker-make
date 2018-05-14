@@ -33,11 +33,13 @@ docker_time_stamp="${CURDIR}/build/.stamp.time.${docker_name}"
 docker_rev_stamp="${CURDIR}/build/.stamp.revision.${docker_name}"
 docker_image="${DOCKER_NS}:${docker_name}-${REVISION}"
 
+DOCKER_REVISION=`cat ${docker_rev_stamp} 2> /dev/null || echo ""`
+
 current_commit_id=`git rev-parse HEAD`
 
 build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}' ${docker_image} 2> /dev/null || echo ''`
 
-if test -z "${force}" && test -f "${docker_rev_stamp}" && test -s "${docker_rev_stamp}" && cmp -s "${BUILD_ROOT}/REVISION" "${docker_rev_stamp}" && test -f "${docker_time_stamp}" && test -s "${docker_time_stamp}" && test -n "${build_time}" && (echo "${build_time}" | cmp -s "${docker_time_stamp}")
+if test -z "${force}" && test -f "${docker_rev_stamp}" && test -s "${docker_rev_stamp}" && test ${REVISION} = ${DOCKER_REVISION} && test -f "${docker_time_stamp}" && test -s "${docker_time_stamp}" && test -n "${build_time}" && (echo "${build_time}" | cmp -s "${docker_time_stamp}")
 then
 	echo "Nothing to do for ${docker_image}"
 else
