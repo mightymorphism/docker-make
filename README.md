@@ -9,6 +9,11 @@ Configuration goes in ``mk/Makefile.cfg``.  Local changes and
 overrides that don't belong in the repository can be placed in
 ``mk/Makefile.cfg.local``.
 
+# Dependencies
+
+1. Some targets assume that ``jq`` is available
+2. Currently assumes that ``realpath`` from ``coreutils`` 8.25 or later is available.
+
 # Make targets
 
 - all		- do it all; recursively if necessary
