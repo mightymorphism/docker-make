@@ -30,7 +30,7 @@ docker_clean_${1}:
 	@docker images -q --filter "dangling=true" ${DOCKER_NS}:${1}-${REVISION} | xargs -I{} -r -n 1 bash -c 'echo "Removing image {}"; docker rmi {}'
 
 docker_stamp_nuke_${1}:
-	rm -f build/.stamp.time.${1} build/.stamp.revision.${1}
+	rm -f build/.stamp.*.${1}
 
 docker_nuke_${1}: docker_stamp_nuke_${1}
 	@rm -f build/Dockerfile.${1}
