@@ -1,53 +1,101 @@
-#! /bin/bash
+#! /usr/bin/env ruby
 # Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+#
+#	${ROOT}/mk/scripts/docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
-set -e
+require 'ostruct'
+require 'shellwords'
 
-for v in BUILD_DATE BUILD_ROOT CURDIR DOCKER_NS REVISION
-do
-	if test -z "${!v}"
-	then
-		echo "Missing variable: $v"
-		exit 1
-	fi
-done
+def expand_build_path(name)
+  path = File.expand_path(File.join(Dir.pwd, 'build', name))
+  return path
+end
 
-force=""
-build_args=""
-
-while [[ $# -gt 1 ]]
-do
-	case "$1" in
-        -a|--build-arg) build_args="$build_args --build-arg $2"; shift ;;
-	-f|--force) force="true"; ;;
-	*) echo "Unknown option \"$1\"" 1>&2 ; exit 1 ;;
-	esac
-
-	shift
-done
+def read_build_path(path)
+  if File.exists?(path) then
+    return File.read(path).chomp
+  end
+  return ''
+end
 
 
-docker_name="$1"
+ENV_VARS = %w(BUILD_DATE BUILD_ROOT CURDIR DOCKER_NS REVISION)
 
-docker_time_stamp="${CURDIR}/build/.stamp.time.${docker_name}"
-docker_rev_stamp="${CURDIR}/build/.stamp.revision.${docker_name}"
-docker_image="${DOCKER_NS}:${docker_name}-${REVISION}"
+ENV_VARS.each do |var|
+  if ENV[var].nil? then
+    fail "Missing environment variable: #{var}"
+  end
+end
 
-DOCKER_REVISION=`cat ${docker_rev_stamp} 2> /dev/null || echo ""`
+$args = OpenStruct.new
+$args.force = false
+$args.build_args = []
 
-current_commit_id=`git rev-parse HEAD`
+while ARGV[0] && ARGV[0].start_with?('--') do
+  opt = ARGV.shift
+  case opt
+  when '-a', '--build-arg'
+    $args.build_arg << ARGV.shift
+  when '-f', '--force'
+    $args.force = true
+  else
+    fail "unknown option: #{ARGV[0].inspect}"
+  end
+end
 
-build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}' ${docker_image} 2> /dev/null || echo ''`
+docker_name=ARGV[0]
+if docker_name.nil? then
+  fail "missing docker_name parameter"
+end
 
-if test -z "${force}" && test -f "${docker_rev_stamp}" && test -s "${docker_rev_stamp}" && test ${REVISION} = ${DOCKER_REVISION} && test -f "${docker_time_stamp}" && test -s "${docker_time_stamp}" && test -n "${build_time}" && (echo "${build_time}" | cmp -s "${docker_time_stamp}")
-then
-	echo "Nothing to do for ${docker_image}"
-else
-	echo "Building ${docker_image}"
-	cd ${BUILD_ROOT}
-	echo docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" -t "${docker_image}" .
-	docker build ${DOCKER_SQUASH} -f "${CURDIR}/build/Dockerfile.${docker_name}" --label "revision=${REVISION}" --label "build_time=${BUILD_DATE}" --label "commit_id=${current_commit_id}" --label "docker_ns=${DOCKER_NS}" -t "${docker_image}" .
+%w(docker_name).each_with_index do |var, i|
+   if ARGV[i].nil? || ARGV[i].empty? then
+     $stderr.puts "Missing argument: #{var.inspect}"
+     $stderr.puts "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
+     exit(1)
+   end
 
-	echo "${REVISION}" > "${docker_rev_stamp}"
-	echo "${BUILD_DATE}" > "${docker_time_stamp}"
-fi
+  $args[var.to_sym] = ARGV[i]
+end
+
+$args.docker_time_stamp = expand_build_path(".stamp.time.#{$args.docker_name}")
+$args.docker_git_stamp = expand_build_path(".stamp.git.#{$args.docker_name}")
+$args.docker_rev_stamp = expand_build_path(".stamp.revision.#{$args.docker_name}")
+$args.current_commit_id = `git rev-parse HEAD`.chomp
+$args.docker_image = "#{ENV['DOCKER_NS']}:#{$args.docker_name}-#{ENV['REVISION']}"
+$args.build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}' #{$args.docker_image} 2> /dev/null || echo ''`.chomp
+
+ok = !$args.force
+ok &&= ENV['REVISION'] == read_build_path($args.docker_rev_stamp)
+#ok &&= $args.current_commit_id == read_build_path($args.docker_git_stamp)
+ok &&= $args.build_time == read_build_path($args.docker_time_stamp)
+
+if ok then
+  puts "Nothing to do for #{$args.docker_image}"
+  exit(0)
+end
+
+cmd = %w(docker build)
+if ENV['DOCKER_SQUASH'] then
+  cmd << ENV['DOCKER_SQUASH']
+end
+cmd << %W(-f #{Dir.pwd}/build/Dockerfile.#{$args.docker_name})
+cmd << %W(--label revision=#{ENV['REVISION']})
+cmd << %W(--label build_time=#{ENV['BUILD_DATE']})
+cmd << %W(--label commit_id=#{$args.current_commit_id})
+cmd << %W(-t #{$args.docker_image})
+cmd << %w(.)
+cmd = cmd.flatten(1)
+
+puts "Building #{$args.docker_image}"
+Dir.chdir(ENV['BUILD_ROOT']) do
+  puts cmd.join(' ')
+  cmd = Shellwords.join(cmd)
+  if !system(cmd) then
+    fail "docker build failed"
+  end
+end
+
+File.open($args.docker_rev_stamp, 'w') { |f| f.puts(ENV['REVISION']) }
+File.open($args.docker_time_stamp, 'w') { |f| f.puts(ENV['BUILD_DATE']) }
+File.open($args.docker_git_stamp, 'w') { |f| f.puts($args.current_commit_id) }
