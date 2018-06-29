@@ -29,6 +29,7 @@ end
 
 $args = OpenStruct.new
 $args.force = false
+$args.force_on_commit = false
 $args.build_args = []
 
 while ARGV[0] && ARGV[0].start_with?('--') do
@@ -36,6 +37,8 @@ while ARGV[0] && ARGV[0].start_with?('--') do
   case opt
   when '-a', '--build-arg'
     $args.build_arg << ARGV.shift
+  when '-c', '--force-on-commit'
+    $args.force_on_commit = true
   when '-f', '--force'
     $args.force = true
   else
@@ -67,7 +70,9 @@ $args.build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}
 
 ok = !$args.force
 ok &&= ENV['REVISION'] == read_build_path($args.docker_rev_stamp)
-#ok &&= $args.current_commit_id == read_build_path($args.docker_git_stamp)
+if $args.force_on_commit then
+  ok &&= $args.current_commit_id == read_build_path($args.docker_git_stamp)
+end
 ok &&= $args.build_time == read_build_path($args.docker_time_stamp)
 
 if ok then

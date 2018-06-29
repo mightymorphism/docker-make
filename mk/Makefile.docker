@@ -6,11 +6,13 @@ DOCKER_SQUASH:=--squash
 export DOCKER_SQUASH
 endif
 
+DOCKERB_FORCE_ON_COMMIT ?=
+
 # Make docker_* dependency of non-docker version
 $(foreach _, init check depend clean nuke reset, $(eval $_: docker_$_))
 $(foreach _, init check depend clean nuke reset, $(eval .PHONY: docker_$_))
 
-DOCKERB_ARGS := $(foreach v, $(filter DOCKERB_%, ${.VARIABLES}), $(patsubst DOCKERB_%,%,$v)=$($(v)))
+DOCKERB_ARGS := $(foreach v, $(filter-out DOCKERB_FORCE_ON_COMMIT, $(filter DOCKERB_%, ${.VARIABLES})), $(patsubst DOCKERB_%,%,$v)=$($(v)))
 
 define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb
@@ -19,7 +21,11 @@ build/Dockerfile.${1}: src/${1}.dockerb
 docker_expand_${1}: build/Dockerfile.${1}
 
 docker_build_${1}: docker_expand_${1}
+ifeq ($(filter ${1},${DOCKERB_FORCE_ON_COMMIT}),)
 	${ROOT}/mk/scripts/docker-build-wrapper ${DOCKER_BUILD_ARGS} ${1}
+else
+	${ROOT}/mk/scripts/docker-build-wrapper --force-on-commit ${DOCKER_BUILD_ARGS} ${1}
+endif
 
 docker_build_force_${1}: docker_expand_${1}
 	${ROOT}/mk/scripts/docker-build-wrapper --force ${DOCKER_BUILD_ARGS} ${1}
