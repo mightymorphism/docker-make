@@ -65,7 +65,15 @@ endif
 define DOCKER_COMPOSE_template
 .PHONY: docker_compose_${1}
 build/compose-${1}.yml: src/compose-${1}.yml.erb
+ifeq ("$(wildcard ${ROOT}/config/dockerb-${1}.yml)", "")
+ifeq ("$(wildcard ${ROOT}/config/dockerb.yml)", "")
 	${ROOT}/mk/scripts/dockerb -o build/compose-${1}.yml src/compose-${1}.yml.erb ${DOCKERB_ARGS}
+else
+	${ROOT}/mk/scripts/dockerb -c ${ROOT}/config/dockerb.yml -o build/compose-${1}.yml src/compose-${1}.yml.erb ${DOCKERB_ARGS}
+endif
+else
+	${ROOT}/mk/scripts/dockerb -c ${ROOT}/config/dockerb-${1}.yml -o build/compose-${1}.yml src/compose-${1}.yml.erb ${DOCKERB_ARGS}
+endif
 
 docker_compose_${1}: build/compose-${1}.yml
 endef
