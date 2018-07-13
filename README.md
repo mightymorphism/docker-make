@@ -37,3 +37,19 @@ overrides that don't belong in the repository can be placed in
 - docker\_remote\_list	- directly query remote registry for images
 - docker\_remote\_push(\_\*)	- push images marked as "remote" to registry
 - docker\_remote\_tag(\_\*)	- push tags for "remote" images to registry
+
+# Using git subtree to merge into other projects
+
+Instead of manually tracking this repository, if you have few/no changes to
+the core functionality, you can use ``git subtree`` to merge it into your
+repository.  One way to do so is to check out a copy of this repo and run:
+
+```
+docker-make$ git subtree split --prefix=mk --annotate="[mk] " -b mk
+```
+
+Then in your repository, assuming it is in a parallel directory, ``repo``:
+
+```
+repo$ git subtree add --prefix=mk --squash ../docker-make mk
+```
