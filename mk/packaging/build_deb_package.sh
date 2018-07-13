@@ -32,7 +32,7 @@ mkdir -p DEBIAN \
 
 if [ -f ${BUILD_ROOT}/config/pkg-manifest ]
 then
-  awk -vBUILD_ROOT="${BUILD_ROOT}" '{ printf("cp %s/%s %s\n", BUILD_ROOT, $1, $2); }' config/pkg-manifest | bash -x
+  awk -vBUILD_ROOT="${BUILD_ROOT}" '{ printf("cp %s/%s %s\n", BUILD_ROOT, $1, $2); }' ${BUILD_ROOT}/config/pkg-manifest | bash -x
 else
   cp ${BUILD_ROOT}/bin/${PACKAGE_NAME}  usr/bin/
 fi
