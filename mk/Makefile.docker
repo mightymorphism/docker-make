@@ -33,14 +33,14 @@ docker_build_force_${1}: docker_expand_${1}
 docker_rebuild_${1}: docker_stamp_nuke_${1} docker_build_force_${1}
 
 docker_clean_${1}:
-	@docker images -q --filter "dangling=true" ${DOCKER_NS}:${1}-${REVISION} | xargs -I{} -r -n 1 bash -c 'echo "Removing image {}"; docker rmi {}'
+	@docker images -q --filter "dangling=true" ${DOCKER_NS}:${1}-${REVISION} | xargs -I{} -r bash -c 'echo "Removing images: {}"; docker rmi --force {}'
 
 docker_stamp_nuke_${1}:
 	rm -f build/.stamp.*.${1}
 
 docker_nuke_${1}: docker_stamp_nuke_${1}
 	@rm -f build/Dockerfile.${1}
-	@docker images -q "${DOCKER_NS}:${1}-[0-9]*" | xargs -I{} -r -n 1 bash -c 'echo "Removing image {}"; docker rmi {}'
+	@docker images -q "${DOCKER_NS}:${1}-[0-9]*" | xargs -I{} -r bash -c 'echo "Removing images: {}"; docker rmi --force {}'
 
 # Currently a dummy target as build tags locally
 docker_tag_${1}:
@@ -106,8 +106,8 @@ docker_nuke: docker_cleanup $(call reverse, $(patsubst %,docker_nuke_%, ${DOCKER
 docker_cleanup:
 	docker container prune -f
 	docker image prune -f
-	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Repository}}:{{.Tag}}" | grep -v ':<none>$$' | xargs -r -n 1 docker rmi
-	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Digest}}" | xargs -r -n 1 docker rmi
+	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Repository}}:{{.Tag}}" | grep -v ':<none>$$' | xargs -r docker rmi --force
+	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Digest}}" | xargs -r docker rmi --force
 
 docker_login:
 	aws $(if ${DOCKER_AWS_PROFILE}, --profile ${DOCKER_AWS_PROFILE},) ecr get-login --no-include-email $(if ${AWS_REGION}, --region ${AWS_REGION},) | bash
