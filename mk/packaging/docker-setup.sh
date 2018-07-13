@@ -17,8 +17,11 @@ do
 	esac
 done
 
-useradd -m -s /bin/bash -d $home build
-chown -R build:build ${home}
+if ! id -u build 2>&1 > /dev/null
+then
+  useradd -m -s /bin/bash -d $home build
+  chown -R build:build ${home}
+fi
 
 if [ -n "${overlay}" ]
 then
@@ -28,11 +31,22 @@ then
 	chown -R build:build ${home}
 
 	mkdir ${over}
+	umount ${over} || /bin/true
 	mount -t tmpfs ${over} ${over}
 	mkdir -p ${over}/upper ${over}/work
 
+	umount ${home}/src || /bin/true
 	mount -t overlay overlay -o lowerdir=${src},upperdir=${over}/upper,workdir=${over}/work ${home}/src
 else
 	echo "Linking docker volume..."
-	ln -sf ${src} ${home}/src
+	if test -L ${home}/src
+	then
+		target=`readlink -f ${src}`
+		if ["${target}" -ne "${home}/src"]
+		then
+			echo "${home}/src points to ${target}, but should point to ${src}"
+		fi
+	else
+		ln -sf ${src} ${home}/src
+	fi
 fi
