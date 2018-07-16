@@ -1,11 +1,9 @@
 # Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
-RAILS_ENV?=development
-
 compose: COMPOSE?=run api
 compose: SHELL:=/bin/bash
 compose:
-	${ROOT}/bin/compose -f $${COMPOSE_FILE:-${COMPOSE_DEFAULT}} ${COMPOSE} ${CMD}
+	${ROOT}/mk/scripts/compose-wrapper -f $${COMPOSE_FILE:-${COMPOSE_DEFAULT}} ${COMPOSE} ${CMD}
 
 compose_up:
 	$(MAKE) -C ${ROOT} compose COMPOSE=up

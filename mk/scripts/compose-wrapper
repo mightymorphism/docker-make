@@ -20,7 +20,7 @@ compose_args = []
 command_args = true
 package_name = ENV['PACKAGE_NAME']
 compose_user = ENV.fetch('COMPOSE_USER', 'root')
-rootdir = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+rootdir = File.expand_path(ENV.fetch('BUILD_ROOT', File.join(File.dirname(__FILE__), '../..')))
 
 i=0
 while i<ARGV.length do
