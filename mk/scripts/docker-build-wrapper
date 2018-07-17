@@ -31,6 +31,7 @@ $args = OpenStruct.new
 $args.force = false
 $args.force_on_commit = false
 $args.build_args = []
+$args.build_root= ENV['BUILD_ROOT']
 
 while ARGV[0] && ARGV[0].start_with?('--') do
   opt = ARGV.shift
@@ -41,6 +42,13 @@ while ARGV[0] && ARGV[0].start_with?('--') do
     $args.force_on_commit = true
   when '-f', '--force'
     $args.force = true
+  when '-r', '--root'
+    $args.build_root = ARGV.shift
+    if $args.build_root.nil? || $args.build_root.empty? then
+      fail "invalid build_root: cannot be empty"
+    elsif !File.directory?($args.build_root) then
+      fail "invalid build_root: #{$args.build_root.inspect}"
+    end
   else
     fail "unknown option: #{ARGV[0].inspect}"
   end
@@ -93,7 +101,7 @@ cmd << %w(.)
 cmd = cmd.flatten(1)
 
 puts "Building #{$args.docker_image}"
-Dir.chdir(ENV['BUILD_ROOT']) do
+Dir.chdir($args.build_root) do
   puts cmd.join(' ')
   cmd = Shellwords.join(cmd)
   if !system(cmd) then

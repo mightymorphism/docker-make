@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
 set -e
 
@@ -37,7 +37,7 @@ TEMP=$(mktemp "${TMPDIR:-/tmp/}$(basename 0).XXXXXXXXXXXX")
 trap "{ rm -f $TEMP; }" EXIT
 
 cat > $TEMP <<- EOM
-// Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+// Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 package main
 
 const BuildRelease = "$PACKAGE_REVISION"

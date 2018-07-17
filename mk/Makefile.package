@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
 
 # Clumsy detection and handling of a docker build environment
 # Don't use runas so we can build it without already having it
@@ -19,7 +19,7 @@ package_build: build
 	${ROOT}/mk/packaging/build_deb_package.sh
 
 package_version:
-	(cd ${BUILD_ROOT} && bash mk/packaging/mkversion.sh src/${PACKAGE_NAME})
+	(cd ${ROOT} && bash mk/packaging/mkversion.sh -r ${BUILD_ROOT} src/${PACKAGE_NAME})
 
 dpkg_deb_present:
 	@which dpkg-deb

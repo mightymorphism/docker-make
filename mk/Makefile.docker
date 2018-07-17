@@ -119,7 +119,7 @@ docker_remote_list:
 	docker images ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}
 
 docker_bootstrap_init:
-	${BUILD_ROOT}/mk/scripts/bootstrap-init
+	${ROOT}/mk/scripts/bootstrap-init
 
 docker_images:
 	docker images -f "label=docker_ns=${DOCKER_NS}"
