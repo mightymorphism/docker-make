@@ -110,7 +110,7 @@ docker_cleanup:
 	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Digest}}" | xargs -r docker rmi --force
 
 docker_login:
-	aws $(if ${DOCKER_AWS_PROFILE}, --profile ${DOCKER_AWS_PROFILE},) ecr get-login --no-include-email $(if ${AWS_REGION}, --region ${AWS_REGION},) | bash
+	aws $(if ${DOCKER_AWS_PROFILE}, --profile ${DOCKER_AWS_PROFILE},) ecr get-login --no-include-email $(if ${DOCKER_AWS_REGISTRY_IDS}, --registry-ids ${DOCKER_AWS_REGISTRY_IDS}) $(if ${AWS_REGION}, --region ${AWS_REGION},) | bash
 
 docker_logout:
 	docker logout ${DOCKER_REGISTRY}
