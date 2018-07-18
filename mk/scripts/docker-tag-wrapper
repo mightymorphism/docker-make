@@ -10,12 +10,15 @@ require 'time'
 require 'ostruct'
 
 $args = OpenStruct.new
+$args.dry_run = false
 $args.label_latest = false
 $args.label_ecr = false
 
 while ARGV[0] && ARGV[0].start_with?('--') do
   opt = ARGV.shift
   case opt
+  when '--dry-run'
+    $args.dry_run = true
   when '--label-latest'
     $args.label_latest = true
   when '--label-ecr'
@@ -32,10 +35,13 @@ end
 
    case var
    when 'verb'
-     $args[var.to_sym] = ARGV[i]
-   else
-     $args[var.to_sym] = ARGV[i]
+     if !%w(tag push).member?(ARGV[i]) then
+       $stderr.puts "<verb> must be one of 'tag' or 'push'"
+       exit(1)
+     end
    end
+
+   $args[var.to_sym] = ARGV[i]
 end
 
 $args.branch = `git rev-parse --abbrev-ref HEAD`
@@ -96,8 +102,12 @@ when 'push'
 end
 
 commands.each do |cmd|
-  if !Kernel.system(cmd) then
-    $stderr.puts "Failed: #{cmd.inspect}"
-    exit(1)
+  if $args.dry_run then
+    puts cmd
+  else
+    if !Kernel.system(cmd) then
+      $stderr.puts "Failed: #{cmd.inspect}"
+      exit(1)
+    end
   end
 end
