@@ -14,6 +14,8 @@ $(foreach _, init check depend clean nuke reset, $(eval .PHONY: docker_$_))
 
 DOCKERB_ARGS := $(foreach v, $(filter-out DOCKERB_FORCE_ON_COMMIT, $(filter DOCKERB_%, ${.VARIABLES})), $(patsubst DOCKERB_%,%,$v)=$($(v)))
 
+DOCKER_TAG_WRAPPER_SYSTEM_ARGS := $(if ${DOCKER_AWS_PROFILE}, --aws-profile ${DOCKER_AWS_PROFILE},) $(if ${DOCKER_AWS_REGISTRY_IDS}, --aws-registry-id ${DOCKER_AWS_REGISTRY_IDS})
+
 define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb
 	${ROOT}/mk/scripts/dockerb -o build/Dockerfile.${1} src/${1}.dockerb ${DOCKERB_ARGS}
@@ -47,10 +49,10 @@ docker_tag_${1}:
 	@/bin/true
 
 docker_remote_tag_${1}: docker_tag_${1}
-	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_ARGS} tag ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
+	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} tag ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
 
 docker_remote_push_${1}: docker_remote_tag_${1}
-	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_ARGS} push ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
+	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} push ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
 endef
 
 ifdef DOCKER_CONTAINERS
