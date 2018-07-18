@@ -38,6 +38,40 @@ overrides that don't belong in the repository can be placed in
 - docker\_remote\_push(\_\*)	- push images marked as "remote" to registry
 - docker\_remote\_tag(\_\*)	- push tags for "remote" images to registry
 
+# Make variables
+
+The docker-make infrastructure is configured by setting a number of
+make variables and then including an appropriate subset of the makefiles
+in the ``mk`` directory.  It then in turn defines a number of make and
+environment variables that you can use to further customize the build.
+
+Docker-make expects you to define at least the following variables.
+Refer to ``docker/Makefile`` for a working example.
+
+- ROOT - points to the root of the repo; for instance ``ROOT=$(abspath
+${CURDIR}/..)``.  By convention defined at the top of a makefile that
+depends on docker-make.  Exported to the environment as ``BUILD_ROOT``.
+
+- REL_ROOT - Make variable defined by the infrastructure to be the
+relative path from the current directory to ``ROOT``.  Do not override.
+Exported to the environment as ``BUILD_RELROOT``.
+
+- REL_CURDIR - Make variable defined by the infrastructure to be the
+relative path from the ``ROOT`` to the current directory.  Do not
+override.
+
+- SUBDIR - optional variable that lists the sub-directories for recursive
+make.
+
+- BUILD_SERVICE - defined at the top of a makefile to specify the
+service to be built.  Used only if building multiple services from
+the same repository.  *NOTE*: *not* merely for use to build multiple
+containers in a single repo, but rather for multiple parallel logical
+repos in a large monorepo, each using docker-make.
+
+- ROOT_SERVICE - relative path from repository root to the directory
+holding service sub-repos in a monorepo; may be empty.
+
 # Using git subtree to merge into other projects
 
 Instead of manually tracking this repository, if you have few/no changes to
