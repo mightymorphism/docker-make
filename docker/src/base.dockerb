@@ -10,7 +10,7 @@ LABEL name="<%= package_name %>-base"		\
 
 RUN mkdir -p /etc/build
 
-COPY bin/cfg-version /usr/local/bin
+COPY mk/scripts/cfg-version /usr/local/bin
 COPY config/versions.yml REVISION /etc/build/
 
 COPY docker/script/package-maintainer.asc	\
