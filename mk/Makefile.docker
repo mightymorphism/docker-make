@@ -102,7 +102,7 @@ docker_remote_push: $(patsubst %, docker_remote_push_%, ${DOCKER_REMOTE_CONTAINE
 
 docker_clean: $(patsubst %,docker_clean_%, ${DOCKER_CONTAINERS})
 
-docker_nuke: docker_cleanup $(call reverse, $(patsubst %,docker_nuke_%, ${DOCKER_CONTAINERS}))
+docker_nuke: docker_cleanup $(call func_reverse, $(patsubst %,docker_nuke_%, ${DOCKER_CONTAINERS}))
 	docker volume prune -f
 
 docker_cleanup:
