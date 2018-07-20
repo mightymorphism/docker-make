@@ -63,7 +63,7 @@ when nil
   $stderr.puts "missing command"
   exit(1)
 else
-  $stderr.puts "unknown command: #{op.inspect}"
+  $stderr.puts "docker-deps: unknown command: #{op.inspect}"
   exit(1)
 end
 
