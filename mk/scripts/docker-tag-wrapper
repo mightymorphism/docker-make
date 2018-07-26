@@ -217,6 +217,11 @@ if $args.label_ecr then
     end
   end
 
+  if manifest.nil? then
+    $stderr.puts "Image not found remotely in ECR, make sure you push before remotely tagging"
+    exit(1)
+  end
+	     
   to_tag = remote_tag_list - pushed_tags
 
   to_tag.each do |tag|
