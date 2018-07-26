@@ -198,7 +198,7 @@ commands.each do |cmd|
   end
 end
 
-if $args.label_ecr then
+if $args.label_ecr && $args.verb == 'push' then
   pushed_tags = []
   pushed_digest = docker_get_image_digest(tag_list.first)
 
