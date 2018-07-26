@@ -51,8 +51,9 @@ docker_tag_${1}:
 docker_remote_tag_${1}: docker_tag_${1}
 	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} tag ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
 
-docker_remote_push_${1}: docker_remote_tag_${1}
+docker_remote_push_${1}: 
 	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} push ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
+	docker_remote_tag_${1}
 endef
 
 ifdef DOCKER_CONTAINERS
