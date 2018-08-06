@@ -34,7 +34,7 @@ def ecr_get_image_metadata(tag_list)
 
   out, status = Open3.capture2(cmd)
   if status.exitstatus != 0 then
-    $stderr.puts "Unable to retrieve manifest for #{tag.inspect}"
+    $stderr.puts "Unable to retrieve manifest for #{tag_list.join(',').inspect}"
     Kernel.exit(1)
   end
 
