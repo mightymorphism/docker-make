@@ -23,6 +23,9 @@ venv_install: venv_check
 	pip install --upgrade --user wheel
 	pip install --upgrade --user -r requirements.txt
 
+venv_wheel: venv_check
+	pip wheel -w ${ROOT}/vendor/wheel -r requirements.txt
+
 venv_clean:
 	rm -f *.pyc
 
