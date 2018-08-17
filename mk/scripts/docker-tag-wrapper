@@ -25,9 +25,7 @@ def ecr_get_image_metadata(tag_list)
     cmd_manifest += %W(--registry-id #{$args.aws_registry_id})
   end
   cmd_manifest += %W(--image-ids)
-  tag_list.each do |tag|
-    cmd_manifest << "imageTag=#{tag}"
-  end
+  cmd_manifest << "imageTag=#{tag_list.first}"
   cmd_manifest += %w(--output json)
 
   cmd = cmd_manifest.join(' ')
@@ -59,8 +57,12 @@ def ecr_set_image_tag(tag, manifest)
 
   out, status = Open3.capture2(cmd)
   if status.exitstatus != 0 then
-    $stderr.puts "Unable to set tag: #{tag.inspect}"
-    Kernel.exit(1)
+    if out.include?('ImageAlreadyExistsException') then
+      $stderr.puts "WARNING: tag #{tag.inspect} already set; will NOT override"
+    else
+      $stderr.puts "Unable to set tag: #{tag.inspect}"
+      Kernel.exit(1)
+    end
   end
 
   return out
@@ -154,17 +156,17 @@ else
 end
 
 tag_list = []
-tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
-
 if $args.label_ecr then
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}"
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-build-#{$args.build_date}"
 	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.branch}-#{$args.build_sha}"
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-build-#{$args.build_date}"
+	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}"
 end
 
 if $args.label_latest then
 	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-latest"
 end
+
+tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
 
 tag_commands = tag_list.map do |t|
   "docker tag #{$args.ns}:#{$args.image}-#{$args.revision} #{t}"
