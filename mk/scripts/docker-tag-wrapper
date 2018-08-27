@@ -55,9 +55,9 @@ def ecr_set_image_tag(tag, manifest)
 
   cmd = cmd_tag.join(' ')
 
-  out, status = Open3.capture2(cmd)
+  out, err, status = Open3.capture3(cmd)
   if status.exitstatus != 0 then
-    if out.include?('ImageAlreadyExistsException') then
+    if err.include?('ImageAlreadyExistsException') then
       $stderr.puts "WARNING: tag #{tag.inspect} already set; will NOT override"
     else
       $stderr.puts "Unable to set tag: #{tag.inspect}"
