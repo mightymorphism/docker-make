@@ -37,7 +37,7 @@ then
 	profile="${DOCKER_AWS_PROFILE}"
 fi
 
-aws --profile ${profile} ecr get-login --no-include-email --region ${region} | bash
+aws --region ${region} --profile ${profile} ecr get-login --no-include-email --region ${region} | bash
 
 if [ "$pull" = "true" ]
 then

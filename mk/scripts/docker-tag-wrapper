@@ -17,6 +17,9 @@ USAGE_BANNER = "Usage: docker-tag-wrapper <verb> <$args.registry> <repo> <ns> <$
 
 def ecr_get_image_metadata(tag_list)
   cmd_manifest = %w(aws)
+  if $args.aws_region then
+    cmd_manifest += %W(--region #{$args.aws_region})
+  end
   if $args.aws_profile then
     cmd_manifest += %W(--profile #{$args.aws_profile})
   end
@@ -43,6 +46,9 @@ def ecr_set_image_tag(tag, manifest)
   #manifest = manifest.dup.strip.gsub(/\s+/, " ")
 
   cmd_tag = %w(aws)
+  if $args.aws_region then
+    cmd_tag += %W(--region #{$args.aws_region})
+  end
   if $args.aws_profile then
     cmd_tag += %W(--profile #{$args.aws_profile})
   end
@@ -83,11 +89,17 @@ $args = OpenStruct.new
 $args.dry_run = false
 $args.label_latest = false
 $args.label_ecr = false
+$args.aws_region = nil
+$args.aws_profile = nil
 
 opt = OptionParser.new do |opts|
   opts.banner = USAGE_BANNER
   opts.on("-n", "--dry-run", "Print out, but do not execute, commands", :NONE) do
     $args.dry_run = true
+  end
+
+  opts.on("-r", "--aws-region", "Set AWS auth region", :REQUIRED) do |r|
+    $args.aws_region = r
   end
 
   opts.on("-p", "--aws-profile", "Set AWS auth profile", :REQUIRED) do |p|

@@ -14,7 +14,7 @@ $(foreach _, init check depend clean nuke reset, $(eval .PHONY: docker_$_))
 
 DOCKERB_ARGS := $(foreach v, $(filter-out DOCKERB_FORCE_ON_COMMIT, $(filter DOCKERB_%, ${.VARIABLES})), $(patsubst DOCKERB_%,%,$v)=$($(v)))
 
-DOCKER_TAG_WRAPPER_SYSTEM_ARGS := $(if ${DOCKER_AWS_PROFILE}, --aws-profile ${DOCKER_AWS_PROFILE},) $(if ${DOCKER_AWS_REGISTRY_IDS}, --aws-registry-id ${DOCKER_AWS_REGISTRY_IDS})
+DOCKER_TAG_WRAPPER_SYSTEM_ARGS := $(if ${DOCKER_AWS_REGION}, --aws-region ${DOCKER_AWS_REGION},) $(if ${DOCKER_AWS_PROFILE}, --aws-profile ${DOCKER_AWS_PROFILE},) $(if ${DOCKER_AWS_REGISTRY_IDS}, --aws-registry-id ${DOCKER_AWS_REGISTRY_IDS})
 
 define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb

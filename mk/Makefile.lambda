@@ -25,14 +25,14 @@ ${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
 	done
 
 create: ${LAMBDA}.zip
-	#aws lambda get-function-configuration --function-name bx-replicate
+	${AWS_CMD} lambda get-function-configuration --function-name bx-replicate
 
 deploy: ${LAMBDA}.zip
 	@if [ -z "${LAMBDA_ARN}" ] ; then				\
 		echo "Missing LAMBDA_ARN" ;				\
 		exit 1 ;						\
 	fi
-	aws lambda update-function-code --function-name "${LAMBDA_ARN}" --publish --zip-file "fileb://${LAMBDA}.zip"
+	${AWS_CMD} lambda update-function-code --function-name "${LAMBDA_ARN}" --publish --zip-file "fileb://${LAMBDA}.zip"
 
 lambda_clean:
 	rm -f ${LAMBDA}.zip
