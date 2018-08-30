@@ -86,6 +86,7 @@ def docker_get_image_digest(repo_and_tag)
 end
 
 $args = OpenStruct.new
+$args.force = false
 $args.dry_run = false
 $args.label_latest = false
 $args.label_ecr = false
@@ -96,6 +97,10 @@ opt = OptionParser.new do |opts|
   opts.banner = USAGE_BANNER
   opts.on("-n", "--dry-run", "Print out, but do not execute, commands", :NONE) do
     $args.dry_run = true
+  end
+
+  opts.on("-f", "--force", "Force (i.e. ignore failures)", :NONE) do
+    $args.force = true
   end
 
   opts.on("-r", "--aws-region", "Set AWS auth region", :REQUIRED) do |r|
@@ -113,10 +118,10 @@ opt = OptionParser.new do |opts|
   opts.on("-E", "--label-ecr", "Automatically add conventional labels", :NONE) do
     $args.label_ecr = true
   end
+
   opts.on("-L", "--label-latest", "Automatically add a latest label", :NONE) do
     $args.label_latest = true
   end
-
 end
 
 opt.parse!
@@ -156,29 +161,50 @@ else
   $args.build_sha = $args.build_sha[0...8]
 end
 
-$args.build_date = `docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}`
-if $? != 0 || $args.build_date.nil? || $args.build_date.empty? then
-  $stderr.puts "Unable to retrieve build time stamp"
-  exit(1)
+if $args.verb == 'pull' then
+  $stderr.puts "Skipping computation of build_date for pull..."
 else
-  $args.build_date.chomp!
+  $args.build_date = `docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}`
+  if $? != 0 || $args.build_date.nil? || $args.build_date.empty? then
+    $stderr.puts "Unable to retrieve build time stamp"
+    exit(1)
+  else
+    $args.build_date.chomp!
 
-  # Remove colons from timestamp to avoid munging Docker tag
-  $args.build_date = Time.parse($args.build_date).gmtime.strftime("%Y-%m-%dT%H%M%S")
+    # Remove colons from timestamp to avoid munging Docker tag
+    $args.build_date = Time.parse($args.build_date).gmtime.strftime("%Y-%m-%dT%H%M%S")
+  end
 end
 
 tag_list = []
+pull_tag_list = []
+remote_tag_prefix = "#{$args.registry}/#{$args.repository}"
 if $args.label_ecr then
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.branch}-#{$args.build_sha}"
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-build-#{$args.build_date}"
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}"
+  tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.branch}-#{$args.build_sha}"
+  tag_list << tag
+  pull_tag_list << tag
+
+  if $args.label_latest then
+    tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.branch}-latest"
+    tag_list <<  tag
+    pull_tag_list << tag
+  end
+
+  if $args.verb != 'pull' then
+    tag_list << "#{remote_tag_prefix}:#{$args.image}-build-#{$args.build_date}"
+  end
+  tag_list << "#{remote_tag_prefix}:#{$args.image}"
 end
 
 if $args.label_latest then
-	tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-latest"
+  tag = "#{remote_tag_prefix}:#{$args.image}-latest"
+  tag_list << tag
+  pull_tag_list << tag
 end
 
-tag_list << "#{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
+tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.revision}"
+tag_list << tag
+pull_tag_list << tag
 
 tag_commands = tag_list.map do |t|
   "docker tag #{$args.ns}:#{$args.image}-#{$args.revision} #{t}"
@@ -188,10 +214,13 @@ push_commands = tag_list.map do |t|
   "docker push #{t}"
 end
 
-pull_commands = "docker pull #{tag_list.first}"
+pull_commands = pull_tag_list.map do |t|
+  "docker pull #{t}"
+end
 
 ecr_tags = []
 commands = []
+exec_mode = 'all'			# BOTCH: super crude
 case $args.verb
 when 'tag'
   commands = tag_commands
@@ -202,18 +231,29 @@ when 'push'
     commands = push_commands
   end
 when 'pull'
+  exec_mode = 'any'			# we just need one
   commands = pull_commands
 end
 
+status = []
 commands.each do |cmd|
   if $args.dry_run then
     puts cmd
   else
-    if !Kernel.system(cmd) then
-      $stderr.puts "Failed: #{cmd.inspect}"
+    rv = Kernel.system(cmd)
+    status << [cmd, rv]
+    if !$args.force && !rv && exec_mode == 'all' then
+      $stderr.puts "Failed: #{failed.inspect}"
       exit(1)
+    elsif rv && exec_mode == 'any' then
+      break
     end
   end
+end
+
+if !$args.force && exec_mode == 'any' && status.all? { |v| !v[1] } then
+  $stderr.puts "Failed: all #{$args.verb} commands failed."
+  exit(1)
 end
 
 if $args.label_ecr && $args.verb == 'push' then
