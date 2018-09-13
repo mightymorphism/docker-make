@@ -9,7 +9,6 @@ require 'yaml'
 require 'ostruct'
 require 'optparse'
 require 'tempfile'
-require 'hashie/mash'
 
 def ostructify(val)
   if val.is_a?(String) || val.is_a?(Numeric) then
@@ -49,14 +48,15 @@ def walk_config(c, path)
 end
 
 def process_compose(c)
-  header = c.dockerb_.header
-  c.delete(:dockerb)
+  if c['dockerb'] then
+    header = c['dockerb']['header']
+    c.delete('dockerb')
+  end
   c = JSON.parse(JSON.dump(c))
 
   walk_config(c, [])
   return c, header
 end
-
 
 options = OpenStruct.new
 options.errors = []
@@ -151,7 +151,6 @@ end
 result = ERB.new($content, nil, '-').result($dockerb)
 if $fname =~ /[.]yml([.]erb)?$/ then
   y = YAML.load(result)
-  y = Hashie::Mash.new(y)
   y, header = process_compose(y)
   result = ''
   if header then
