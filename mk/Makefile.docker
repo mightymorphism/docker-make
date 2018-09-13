@@ -139,3 +139,7 @@ docker_images:
 
 docker_labels:
 	docker inspect --format '{{json .ContainerConfig.Labels}}' ${PACKAGE_NAME}:$(or ${C},${COMPOSE_DEFAULT})-${REVISION}|jq
+
+docker_show_deps:
+	@echo -n "INPUT\t\t->\tOUTPUT\n"
+	@grep '^FROM' src/*.dockerb  | sed -e 's;^src/;;' -e 's;-[<].*;;'  -e 's;[.]dockerb:FROM;;' -e 's;tddium_site:;;' | awk '{ printf("%s\t->\t%s\n", $$2, $$1); }' | sort -r
