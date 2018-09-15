@@ -4,111 +4,147 @@
 #	${ROOT}/mk/scripts/docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
 require 'ostruct'
+require 'optparse'
 require 'shellwords'
 
-def expand_build_path(name)
-  path = File.expand_path(File.join(Dir.pwd, 'build', name))
-  return path
-end
+USAGE_MESSAGE = "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
-def read_build_path(path)
-  if File.exists?(path) then
-    return File.read(path).chomp
-  end
-  return ''
-end
+class DockerBuilder
+  ENV_VARS = %w(BUILD_DATE BUILD_ROOT CURDIR DOCKER_NS REVISION)
 
+  attr_accessor :nop
+  attr_accessor :force, :force_on_commit
+  attr_accessor :context_root, :build_root, :build_args
+  attr_accessor :docker_name, :docker_image, :docker_build_time
+  attr_accessor :docker_rev_stamp, :docker_time_stamp, :docker_git_stamp
+  attr_accessor :current_commit_id, :revision
 
-ENV_VARS = %w(BUILD_DATE BUILD_ROOT CURDIR DOCKER_NS REVISION)
+  def initialize(docker_name, options)
+    set_defaults
 
-ENV_VARS.each do |var|
-  if ENV[var].nil? then
-    fail "Missing environment variable: #{var}"
-  end
-end
-
-$args = OpenStruct.new
-$args.force = false
-$args.force_on_commit = false
-$args.build_args = []
-$args.build_root= ENV['BUILD_ROOT']
-
-while ARGV[0] && ARGV[0].start_with?('--') do
-  opt = ARGV.shift
-  case opt
-  when '-a', '--build-arg'
-    $args.build_arg << ARGV.shift
-  when '-c', '--force-on-commit'
-    $args.force_on_commit = true
-  when '-f', '--force'
-    $args.force = true
-  when '-r', '--root'
-    $args.build_root = ARGV.shift
-    if $args.build_root.nil? || $args.build_root.empty? then
-      fail "invalid build_root: cannot be empty"
-    elsif !File.directory?($args.build_root) then
-      fail "invalid build_root: #{$args.build_root.inspect}"
+    options.each_pair do |k, v|
+      instance_variable_set("@#{k}".to_sym, v)
     end
-  else
-    fail "unknown option: #{ARGV[0].inspect}"
+
+    @docker_name = docker_name
+  end
+
+  def set_defaults
+    @nop = false
+    @force = false
+    @force_on_commit = false
+    @build_args = []
+
+    ENV_VARS.each do |var|
+      if ENV[var].nil? then
+        fail "Missing environment variable: #{var}"
+      end
+
+      instance_variable_set("@#{var.downcase}", ENV[var])
+    end
+
+    @context_root = @build_root
+  end
+
+  def fetch_metadata
+    @docker_rev_stamp = expand_build_path(".stamp.revision.#{@docker_name}")
+    @docker_time_stamp = expand_build_path(".stamp.time.#{@docker_name}")
+    @docker_git_stamp = expand_build_path(".stamp.git.#{@docker_name}")
+
+    @current_commit_id = `git rev-parse HEAD`.chomp
+    @docker_image = "#{@docker_ns}:#{@docker_name}-#{@revision}"
+    @docker_build_time = `docker inspect --format '{{index .Config.Labels "build_time"}}' #{@docker_image} 2> /dev/null || echo ''`.chomp
+  end
+
+  def update_metdata
+    File.open(@docker_rev_stamp, 'w') { |f| f.puts(@revision) }
+    File.open(@docker_time_stamp, 'w') { |f| f.puts(@build_date) }
+    File.open(@docker_git_stamp, 'w') { |f| f.puts(@current_commit_id) }
+  end
+
+  def needs_update?
+    ok = !@force
+    ok &&= @revision == read_build_path(@docker_rev_stamp)
+    if @force_on_commit then
+      ok &&= @current_commit_id == read_build_path(@docker_git_stamp)
+    end
+    ok &&= @build_time == read_build_path(@docker_time_stamp)
+
+    return !ok
+  end
+
+  def generate_docker_command
+    cmd = %w(docker build)
+    if ENV['DOCKER_SQUASH'] then
+      cmd << ENV['DOCKER_SQUASH']
+    end
+    cmd << %W(-f #{expand_build_path("Dockerfile.#{@docker_name}")})
+    cmd << %W(--label revision=#{@revision})
+    cmd << %W(--label build_time=#{@build_date})
+    cmd << %W(--label commit_id=#{@current_commit_id})
+    cmd << %W(-t #{@docker_image})
+    cmd << %w(.)
+    cmd = cmd.flatten(1)
+    return cmd
+  end
+
+  def expand_build_path(name)
+    path = File.expand_path(File.join(@build_root, 'docker', 'build', name))
+    return path
+  end
+
+  def read_build_path(path)
+    if File.exists?(path) then
+      return File.read(path).chomp
+    end
+    return ''
   end
 end
 
-docker_name=ARGV[0]
-if docker_name.nil? then
-  fail "missing docker_name parameter"
+options = Hash.new
+
+opt = OptionParser.new do |opts|
+  opts.banner = USAGE_MESSAGE
+  opts.on("-a", "--build-arg", "build-arg", :REQUIRED) do |arg|
+    options[:build_arg] ||= []
+    options[:build_arg] << arg
+  end
+  opts.on("-c", "--force-on-commit", "force on commit", :NONE) do
+    options[:force_on_commit] = true
+  end
+  opts.on("-f", "--force", "force", :NONE) do
+    options[:force] = true
+  end
+  opts.on("-r", "--root", "root", :REQUIRED) do |root|
+    if root.nil? || root.empty? then
+      fail "invalid build_root: cannot be empty"
+    elsif !File.directory?(root) then
+      fail "invalid build_root: #{root.inspect}"
+    end
+    options[:build_root] = root
+  end
 end
 
-%w(docker_name).each_with_index do |var, i|
-   if ARGV[i].nil? || ARGV[i].empty? then
-     $stderr.puts "Missing argument: #{var.inspect}"
-     $stderr.puts "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
-     exit(1)
-   end
+opt.parse!
 
-  $args[var.to_sym] = ARGV[i]
-end
+$builder = DockerBuilder.new(ARGV[0], options)
+$builder.fetch_metadata
 
-$args.docker_time_stamp = expand_build_path(".stamp.time.#{$args.docker_name}")
-$args.docker_git_stamp = expand_build_path(".stamp.git.#{$args.docker_name}")
-$args.docker_rev_stamp = expand_build_path(".stamp.revision.#{$args.docker_name}")
-$args.current_commit_id = `git rev-parse HEAD`.chomp
-$args.docker_image = "#{ENV['DOCKER_NS']}:#{$args.docker_name}-#{ENV['REVISION']}"
-$args.build_time=`docker inspect --format '{{index .Config.Labels "build_time"}}' #{$args.docker_image} 2> /dev/null || echo ''`.chomp
-
-ok = !$args.force
-ok &&= ENV['REVISION'] == read_build_path($args.docker_rev_stamp)
-if $args.force_on_commit then
-  ok &&= $args.current_commit_id == read_build_path($args.docker_git_stamp)
-end
-ok &&= $args.build_time == read_build_path($args.docker_time_stamp)
-
-if ok then
-  puts "Nothing to do for #{$args.docker_image}"
+if !$builder.needs_update? then
+  puts "Nothing to do for #{$builder.docker_image}"
   exit(0)
 end
 
-cmd = %w(docker build)
-if ENV['DOCKER_SQUASH'] then
-  cmd << ENV['DOCKER_SQUASH']
-end
-cmd << %W(-f #{Dir.pwd}/build/Dockerfile.#{$args.docker_name})
-cmd << %W(--label revision=#{ENV['REVISION']})
-cmd << %W(--label build_time=#{ENV['BUILD_DATE']})
-cmd << %W(--label commit_id=#{$args.current_commit_id})
-cmd << %W(-t #{$args.docker_image})
-cmd << %w(.)
-cmd = cmd.flatten(1)
-
-puts "Building #{$args.docker_image}"
-Dir.chdir($args.build_root) do
+puts "Building #{$builder.docker_image}"
+Dir.chdir($builder.context_root) do
+  cmd = $builder.generate_docker_command
   puts cmd.join(' ')
-  cmd = Shellwords.join(cmd)
-  if !system(cmd) then
-    fail "docker build failed"
+  if !$builder.nop then
+    cmd = Shellwords.join(cmd)
+    if !system(cmd) then
+      fail "docker build failed"
+    end
   end
-end
 
-File.open($args.docker_rev_stamp, 'w') { |f| f.puts(ENV['REVISION']) }
-File.open($args.docker_time_stamp, 'w') { |f| f.puts(ENV['BUILD_DATE']) }
-File.open($args.docker_git_stamp, 'w') { |f| f.puts($args.current_commit_id) }
+  $builder.update_metadata
+end
