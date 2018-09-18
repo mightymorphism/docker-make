@@ -64,11 +64,11 @@ class DockerBuilder
 
   def needs_update?
     ok = !@force
-    ok &&= @revision == read_build_path(@docker_rev_stamp)
+    ok &&= @revision == read_path_or_empty(@docker_rev_stamp)
     if @force_on_commit then
-      ok &&= @current_commit_id == read_build_path(@docker_git_stamp)
+      ok &&= @current_commit_id == read_path_or_empty(@docker_git_stamp)
     end
-    ok &&= @build_time == read_build_path(@docker_time_stamp)
+    ok &&= @build_time == read_path_or_empty(@docker_time_stamp)
 
     return !ok
   end
@@ -93,7 +93,7 @@ class DockerBuilder
     return path
   end
 
-  def read_build_path(path)
+  def read_path_or_empty(path)
     if File.exists?(path) then
       return File.read(path).chomp
     end
