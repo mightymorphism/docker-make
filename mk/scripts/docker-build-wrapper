@@ -27,6 +27,10 @@ class DockerBuilder
     end
 
     @docker_name = docker_name
+
+    if !@build_root.start_with?(@context_root) then
+      raise ArgumentError.new("Context root must be a prefix of build root")
+    end
   end
 
   def set_defaults
@@ -56,7 +60,7 @@ class DockerBuilder
     @docker_build_time = `docker inspect --format '{{index .Config.Labels "build_time"}}' #{@docker_image} 2> /dev/null || echo ''`.chomp
   end
 
-  def update_metdata
+  def update_metadata
     File.open(@docker_rev_stamp, 'w') { |f| f.puts(@revision) }
     File.open(@docker_time_stamp, 'w') { |f| f.puts(@build_date) }
     File.open(@docker_git_stamp, 'w') { |f| f.puts(@current_commit_id) }
@@ -119,9 +123,17 @@ opt = OptionParser.new do |opts|
     if root.nil? || root.empty? then
       fail "invalid build_root: cannot be empty"
     elsif !File.directory?(root) then
-      fail "invalid build_root: #{root.inspect}"
+      fail "invalid build_root (not a directory): #{root.inspect}"
     end
     options[:build_root] = root
+  end
+  opts.on("-R", "--context-root", "context-root", :REQUIRED) do |root|
+    if root.nil? || root.empty? then
+      fail "invalid context_root: cannot be empty"
+    elsif !File.directory?(root) then
+      fail "invalid context_root (not a directory): #{root.inspect}"
+    end
+    options[:context_root] = root
   end
 end
 
