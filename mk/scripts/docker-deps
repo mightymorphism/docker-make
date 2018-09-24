@@ -6,6 +6,8 @@ require 'ostruct'
 require 'optparse'
 require 'pathname'
 
+PRAGMA_FROM = %w(nodep)
+
 options = OpenStruct.new
 options.errors = []
 options.prefix = []
@@ -96,6 +98,7 @@ class DockerDep < Hash
     super
     store(:deps, [])
     store(:labels, {})
+    store(:options, {})
     store(:make_deps, [])
   end
 
@@ -103,11 +106,13 @@ class DockerDep < Hash
     mk_rules = []
     deps = fetch(:make_deps, [])
     if !deps.empty? then
-      deps.each do |dep|
-        mk_rules << "docker_nuke_#{dep}: docker_nuke_#{fetch(:name)}"
+      if !fetch(:options)[:nodep] then
+        deps.each do |dep|
+          mk_rules << "docker_nuke_#{dep}: docker_nuke_#{fetch(:name)}"
+        end
+        mk_deps = deps.map { |d| "docker_build_#{d}" }
+        mk_rules << "docker_build_#{fetch(:name)}: " + mk_deps.join(' ')
       end
-      mk_deps = deps.map { |d| "docker_build_#{d}" }
-      mk_rules << "docker_build_#{fetch(:name)}: " + mk_deps.join(' ')
 
       mk_rules << "docker_build_#{fetch(:name)}: #{options.docker_root_path}/#{fetch(:dst_path)}"
       mk_rules << "#{options.docker_root_path}/#{fetch(:dst_path)}: #{options.docker_root_path}/#{fetch(:src_path)}"
@@ -201,7 +206,14 @@ docker_files.each do |fname|
       # * image will be role that this image is built from
       # * version may be an ERB expression
       if line =~ /^\s*FROM/ || line =~ /^\s*#\s*DOCKERB_DEP/ then
+        local_options = {}
         line.sub!(/^\s*#\s*/, '')
+        line, comment = line.split('#', 2)
+
+        PRAGMA_FROM.each do |pragma|
+          local_options[pragma.to_sym] = comment && comment.include?(pragma)
+        end
+
         kw, arg, _ = line.split(/\s+/)
         src, version = arg.reverse.split(/-/, 2).map(&:reverse).reverse
         prefix = options.prefix.find { |p| src =~ /^#{p}:/ }
@@ -216,6 +228,7 @@ docker_files.each do |fname|
         docker_deps[name][:deps] << src
         docker_deps[name][:name] = name
         docker_deps[name][:labels] = {}
+        docker_deps[name][:options] = local_options
         docker_deps[name][:src_path] = fname
         docker_deps[name][:dst_path] = dst_fname
         if !prefix.nil? then
