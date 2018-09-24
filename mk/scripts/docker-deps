@@ -198,6 +198,8 @@ docker_files.each do |fname|
         lines << line
       end
     end
+
+    local_options = {}
     lines.each do |line|
       # FROM line must be of the following form:
       #       FROM prefix:image-version
@@ -205,14 +207,18 @@ docker_files.each do |fname|
       # * prefix will be the project name and docker repo name
       # * image will be role that this image is built from
       # * version may be an ERB expression
-      if line =~ /^\s*FROM/ || line =~ /^\s*#\s*DOCKERB_DEP/ then
-        local_options = {}
+      if line =~ /^\s*#\s*DOCKERB_PRAGMA/ then
+        line.sub!(/^\s*#\s*/, '')
+        kw, pragma = line.split(/\s+/)
+        if PRAGMA_FROM.member?(pragma) then
+          local_options[pragma.to_sym] = true
+        else
+          $stderr.puts "Unrecognized pragma #{pragma.inspect}"
+        end
+
+      elsif line =~ /^\s*FROM/ || line =~ /^\s*#\s*DOCKERB_DEP/ then
         line.sub!(/^\s*#\s*/, '')
         line, comment = line.split('#', 2)
-
-        PRAGMA_FROM.each do |pragma|
-          local_options[pragma.to_sym] = comment && comment.include?(pragma)
-        end
 
         kw, arg, _ = line.split(/\s+/)
         src, version = arg.reverse.split(/-/, 2).map(&:reverse).reverse
@@ -235,6 +241,8 @@ docker_files.each do |fname|
           docker_deps[name][:prefix] = prefix
           docker_deps[name][:make_deps] << src.sub(/^#{prefix}:/, '')
         end
+
+        local_options = {}
       elsif line =~ /^\s*LABEL/ then
         kw, line = line.strip.split(/\s+/, 2)
         key_pairs = key_pair_split(line)
