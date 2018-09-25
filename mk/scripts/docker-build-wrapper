@@ -72,7 +72,7 @@ class DockerBuilder
     if @force_on_commit then
       ok &&= @current_commit_id == read_path_or_empty(@docker_git_stamp)
     end
-    ok &&= @build_time == read_path_or_empty(@docker_time_stamp)
+    ok &&= @docker_build_time == read_path_or_empty(@docker_time_stamp)
 
     return !ok
   end
