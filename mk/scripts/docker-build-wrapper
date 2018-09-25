@@ -153,6 +153,9 @@ Dir.chdir($builder.context_root) do
   puts cmd.join(' ')
   if !$builder.nop then
     cmd = Shellwords.join(cmd)
+    if Kernel.system("which ts 2>&1 > /dev/null") then
+      cmd += " | ts"
+    end
     if !system(cmd) then
       fail "docker build failed"
     end
