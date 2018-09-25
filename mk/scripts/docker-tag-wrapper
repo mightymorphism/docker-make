@@ -243,7 +243,7 @@ commands.each do |cmd|
     rv = Kernel.system(cmd)
     status << [cmd, rv]
     if !$args.force && !rv && exec_mode == 'all' then
-      $stderr.puts "Failed: #{failed.inspect}"
+      $stderr.puts "Failed: #{cmd.inspect}"
       exit(1)
     elsif rv && exec_mode == 'any' then
       break
