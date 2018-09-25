@@ -57,9 +57,14 @@ docker_remote_push_${1}: docker_remote_tag_${1}
 docker_remote_pull_${1}:
 	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} pull ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
 
+ifndef DOCKER_REMOTE_CACHE_DISABLE
 # Pull but allow failures (we're just warming the local cache)
 docker_remote_cache_${1}:
 	${ROOT}/mk/scripts/docker-tag-wrapper --force ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} pull ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
+else
+docker_remote_cache_${1}:
+	@/bin/true
+endif
 endef
 
 ifdef DOCKER_CONTAINERS
