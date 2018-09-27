@@ -180,7 +180,11 @@ tag_list = []
 pull_tag_list = []
 remote_tag_prefix = "#{$args.registry}/#{$args.repository}"
 if $args.label_ecr then
-  tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.branch}-#{$args.build_sha}"
+  tag = "#{remote_tag_prefix}:#{$args.image}-commit-#{$args.build_sha}"
+  tag_list << tag
+  pull_tag_list << tag
+
+  tag = "#{remote_tag_prefix}:#{$args.image}-branch-#{$args.branch}"
   tag_list << tag
   pull_tag_list << tag
 
