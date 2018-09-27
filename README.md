@@ -12,7 +12,6 @@ overrides that don't belong in the repository can be placed in
 # Dependencies
 
 1. Some targets assume that ``jq`` is available
-2. Currently assumes that ``realpath`` from ``coreutils`` 8.25 or later is available.
 
 # Make targets
 

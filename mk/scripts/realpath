@@ -1,0 +1,30 @@
+#! /usr/bin/env ruby
+# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+
+require 'optparse'
+require 'pathname'
+
+relative_to = nil
+
+opt = OptionParser.new do |opts|
+  opts.on("-r", "--relative-to", "relative-to", :REQUIRED) do |p|
+    relative_to = p
+  end
+end
+
+opt.parse!
+
+if ARGV.length != 1 then
+  $stderr.puts opt.help()
+  exit(1)
+end
+
+p = Pathname.new(File.expand_path(ARGV[0]))
+
+if relative_to then
+  r = Pathname.new(relative_to)
+  puts p.relative_path_from(r)
+else
+  puts File.realpath(p, relative_to)
+end
+exit(0)
