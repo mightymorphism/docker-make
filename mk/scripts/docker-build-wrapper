@@ -55,6 +55,7 @@ class DockerBuilder
     @docker_time_stamp = expand_build_path(".stamp.time.#{@docker_name}")
     @docker_git_stamp = expand_build_path(".stamp.git.#{@docker_name}")
 
+    @current_branch = `git rev-parse --abbrev-ref HEAD`
     @current_commit_id = `git rev-parse HEAD`.chomp
     @docker_image = "#{@docker_ns}:#{@docker_name}-#{@revision}"
     @docker_build_time = `docker inspect --format '{{index .Config.Labels "build_time"}}' #{@docker_image} 2> /dev/null || echo ''`.chomp
@@ -85,6 +86,7 @@ class DockerBuilder
     cmd << %W(-f #{expand_build_path("Dockerfile.#{@docker_name}")})
     cmd << %W(--label revision=#{@revision})
     cmd << %W(--label build_time=#{@build_date})
+    cmd << %W(--label branch_name=#{@current_branch})
     cmd << %W(--label commit_id=#{@current_commit_id})
     cmd << %W(-t #{@docker_image})
     cmd << %w(.)
