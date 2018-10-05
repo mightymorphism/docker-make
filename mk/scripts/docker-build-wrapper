@@ -5,6 +5,7 @@
 
 require 'ostruct'
 require 'optparse'
+require 'fileutils'
 require 'shellwords'
 
 USAGE_MESSAGE = "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
@@ -14,7 +15,7 @@ class DockerBuilder
 
   attr_accessor :nop
   attr_accessor :force, :force_on_commit
-  attr_accessor :context_root, :build_root, :build_args
+  attr_accessor :copy_paths, :context_root, :build_root, :build_args
   attr_accessor :docker_name, :docker_image, :docker_build_time
   attr_accessor :docker_rev_stamp, :docker_time_stamp, :docker_git_stamp
   attr_accessor :current_commit_id, :revision
@@ -31,6 +32,16 @@ class DockerBuilder
     if !@build_root.start_with?(@context_root) then
       raise ArgumentError.new("Context root must be a prefix of build root")
     end
+
+    @has_ts = Kernel.system("which ts 2>&1 > /dev/null")
+  end
+
+  def has_ts?
+    return !!@has_ts
+  end
+
+  def wrap_path
+    return File.join(@context_root, '.dockerwrap')
   end
 
   def set_defaults
@@ -78,6 +89,24 @@ class DockerBuilder
     return !ok
   end
 
+  def docker_context_setup
+    FileUtils.rm_rf(wrap_path())
+
+    if @copy_paths.empty? then
+      return
+    end
+
+    FileUtils.mkdir_p(wrap_path())
+
+    @copy_paths.each do |src|
+      FileUtils.cp_r(src, wrap_path())
+    end
+  end
+
+  def docker_context_teardown
+    FileUtils.rm_rf(wrap_path())
+  end
+
   def generate_docker_command
     cmd = %w(docker build)
     if ENV['DOCKER_SQUASH'] then
@@ -108,15 +137,23 @@ class DockerBuilder
 end
 
 options = Hash.new
+options[:force] = false
+options[:build_arg] = []
+options[:copy_paths] = []
 
 opt = OptionParser.new do |opts|
   opts.banner = USAGE_MESSAGE
   opts.on("-a", "--build-arg", "build-arg", :REQUIRED) do |arg|
-    options[:build_arg] ||= []
     options[:build_arg] << arg
   end
   opts.on("-c", "--force-on-commit", "force on commit", :NONE) do
     options[:force_on_commit] = true
+  end
+  opts.on("-C", "--copy-context", "copy context path", :REQUIRED) do |path|
+    if !File.exist?(path) then
+      fail "copy context path must exist: #{root.inspect}"
+    end
+    options[:copy_paths] << path
   end
   opts.on("-f", "--force", "force", :NONE) do
     options[:force] = true
@@ -151,17 +188,19 @@ end
 
 puts "Building #{$builder.docker_image}"
 Dir.chdir($builder.context_root) do
+  $builder.docker_context_setup
+
   cmd = $builder.generate_docker_command
   puts cmd.join(' ')
   if !$builder.nop then
     cmd = Shellwords.join(cmd)
-    if Kernel.system("which ts 2>&1 > /dev/null") then
-      cmd += " | ts"
-    end
+    cmd += " | ts" if $builder.has_ts?
     if !system(cmd) then
       fail "docker build failed"
     end
   end
+
+  $builder.docker_context_teardown
 
   $builder.update_metadata
 end
