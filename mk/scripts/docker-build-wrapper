@@ -99,7 +99,15 @@ class DockerBuilder
     FileUtils.mkdir_p(wrap_path())
 
     @copy_paths.each do |src|
-      FileUtils.cp_r(src, wrap_path())
+      sa = File.stat(src)
+      sb = File.stat(wrap_path())
+
+      if sa.ftype == 'file' && sa.dev == sb.dev then
+        dst_name = File.basename(src)
+        FileUtils.ln(src, File.join(wrap_path(), dst_name))
+      else
+        FileUtils.cp_r(src, wrap_path())
+      end
     end
   end
 
