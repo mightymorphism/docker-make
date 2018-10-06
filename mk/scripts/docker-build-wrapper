@@ -121,6 +121,9 @@ class DockerBuilder
       cmd << ENV['DOCKER_SQUASH']
     end
     cmd << %W(-f #{expand_build_path("Dockerfile.#{@docker_name}")})
+    @build_args.each do |arg|
+      cmd << %W(--build-arg #{arg})
+    end
     cmd << %W(--label revision=#{@revision})
     cmd << %W(--label build_time=#{@build_date})
     cmd << %W(--label branch_name=#{@current_branch})
