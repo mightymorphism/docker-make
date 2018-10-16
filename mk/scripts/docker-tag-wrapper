@@ -85,9 +85,24 @@ def docker_get_image_digest(repo_and_tag)
   return out
 end
 
+def run_command(cmd, dir=nil)
+  out = nil
+  dir ||= Dir.pwd
+  Dir.chdir(dir) do
+    out, err, status = Open3.capture3(cmd)
+    if status.exitstatus != 0 then
+      return nil
+    end
+  end
+  out.chomp!
+  return out
+end
+
 $args = OpenStruct.new
 $args.force = false
 $args.dry_run = false
+$args.build_root = ENV['BUILD_ROOT']
+$args.build_repo_root = ENV['BUILD_REPO_ROOT']
 $args.label_latest = false
 $args.label_ecr = false
 $args.aws_region = nil
@@ -101,6 +116,14 @@ opt = OptionParser.new do |opts|
 
   opts.on("-f", "--force", "Force (i.e. ignore failures)", :NONE) do
     $args.force = true
+  end
+
+  opts.on("-b", "--build-root", "Set BUILD_ROOT", :REQUIRED) do |r|
+    $args.build_root = r
+  end
+
+  opts.on("-r", "--build-repo-root", "Set BUILD_REPO_ROOT", :REQUIRED) do |r|
+    $args.build_repo_root = r
   end
 
   opts.on("-r", "--aws-region", "Set AWS auth region", :REQUIRED) do |r|
@@ -144,33 +167,28 @@ opt.parse!
    $args[var.to_sym] = ARGV[i]
 end
 
-$args.branch = `git rev-parse --abbrev-ref HEAD`
-if $? != 0 || $args.branch.nil? || $args.branch.empty? then
+$args.branch = run_command("git rev-parse --abbrev-ref HEAD", $args.build_repo_root)
+if $args.branch.nil? || $args.branch.empty? then
   $stderr.puts "Unable to retrieve current branch"
   exit(1)
-else
-  $args.branch.chomp!
 end
 
-$args.build_sha = `git rev-parse HEAD`
-if $? != 0 || $args.build_sha.nil? || $args.build_sha.empty? then
+$args.build_sha = run_command("git rev-parse HEAD", $args.build_repo_root)
+if $args.build_sha.nil? || $args.build_sha.empty? then
   $stderr.puts "Unable to retrieve commit ID"
   exit(1)
 else
-  $args.build_sha.chomp!
   $args.build_sha = $args.build_sha[0...8]
 end
 
 if $args.verb == 'pull' then
   $stderr.puts "Skipping computation of build_date for pull..."
 else
-  $args.build_date = `docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}`
-  if $? != 0 || $args.build_date.nil? || $args.build_date.empty? then
+  $args.build_date = run_command("docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}")
+  if $args.build_date.nil? || $args.build_date.empty? then
     $stderr.puts "Unable to retrieve build time stamp"
     exit(1)
   else
-    $args.build_date.chomp!
-
     # Remove colons from timestamp to avoid munging Docker tag
     $args.build_date = Time.parse($args.build_date).gmtime.strftime("%Y-%m-%dT%H%M%S")
   end

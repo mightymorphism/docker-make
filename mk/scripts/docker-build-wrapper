@@ -3,6 +3,7 @@
 #
 #	${ROOT}/mk/scripts/docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
+require 'open3'
 require 'ostruct'
 require 'optparse'
 require 'fileutils'
@@ -11,11 +12,11 @@ require 'shellwords'
 USAGE_MESSAGE = "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
 class DockerBuilder
-  ENV_VARS = %w(BUILD_DATE BUILD_ROOT CURDIR DOCKER_NS REVISION)
+  ENV_VARS = %w(BUILD_DATE BUILD_ROOT BUILD_REPO_ROOT CURDIR DOCKER_NS REVISION)
 
   attr_accessor :nop
-  attr_accessor :force, :force_on_commit
-  attr_accessor :copy_paths, :context_root, :build_root, :build_args
+  attr_accessor :force, :force_on_commit, :copy_paths
+  attr_accessor :context_root, :build_root, :build_repo_root, :build_args
   attr_accessor :docker_name, :docker_image, :docker_build_time
   attr_accessor :docker_rev_stamp, :docker_time_stamp, :docker_git_stamp
   attr_accessor :current_commit_id, :revision
@@ -61,13 +62,28 @@ class DockerBuilder
     @context_root = @build_root
   end
 
+  def fetch_git_param(args)
+    out = nil
+    Dir.chdir($builder.build_repo_root) do
+      cmd = "git rev-parse #{args.join(' ')}"
+      out, err, status = Open3.capture3(cmd)
+      if status.exitstatus != 0 then
+        $stderr.puts "Unable to run git command: #{cmd.inspect}"
+        Kernel.exit(1)
+      end
+    end
+    out.chomp!
+    return out
+  end
+
   def fetch_metadata
     @docker_rev_stamp = expand_build_path(".stamp.revision.#{@docker_name}")
     @docker_time_stamp = expand_build_path(".stamp.time.#{@docker_name}")
     @docker_git_stamp = expand_build_path(".stamp.git.#{@docker_name}")
 
-    @current_branch = `git rev-parse --abbrev-ref HEAD`
-    @current_commit_id = `git rev-parse HEAD`.chomp
+    @current_branch = fetch_git_param(%w(--abbrev-ref HEAD))
+    @current_commit_id = fetch_git_param(%w(HEAD))
+
     @docker_image = "#{@docker_ns}:#{@docker_name}-#{@revision}"
     @docker_build_time = `docker inspect --format '{{index .Config.Labels "build_time"}}' #{@docker_image} 2> /dev/null || echo ''`.chomp
   end
