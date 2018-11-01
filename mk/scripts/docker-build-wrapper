@@ -16,7 +16,7 @@ class DockerBuilder
 
   attr_accessor :nop
   attr_accessor :force, :force_on_commit, :copy_paths
-  attr_accessor :context_root, :build_root, :build_repo_root, :build_args
+  attr_accessor :context_root, :build_root, :build_repo_root, :build_arg
   attr_accessor :docker_name, :docker_image, :docker_build_time
   attr_accessor :docker_rev_stamp, :docker_time_stamp, :docker_git_stamp
   attr_accessor :current_commit_id, :revision
@@ -49,7 +49,7 @@ class DockerBuilder
     @nop = false
     @force = false
     @force_on_commit = false
-    @build_args = []
+    @build_arg = []
 
     ENV_VARS.each do |var|
       if ENV[var].nil? then
@@ -137,7 +137,7 @@ class DockerBuilder
       cmd << ENV['DOCKER_SQUASH']
     end
     cmd << %W(-f #{expand_build_path("Dockerfile.#{@docker_name}")})
-    @build_args.each do |arg|
+    @build_arg.each do |arg|
       cmd << %W(--build-arg #{arg})
     end
     cmd << %W(--label revision=#{@revision})
@@ -172,6 +172,7 @@ opt = OptionParser.new do |opts|
   opts.banner = USAGE_MESSAGE
   opts.on("-a", "--build-arg", "build-arg", :REQUIRED) do |arg|
     options[:build_arg] << arg
+    options[:build_arg].uniq!
   end
   opts.on("-c", "--force-on-commit", "force on commit", :NONE) do
     options[:force_on_commit] = true
