@@ -10,6 +10,7 @@ nohup.out
 *.pyc
 
 .bundle
+.dockerwrap
 .irb-history
 .ruby-*
 .bash_history

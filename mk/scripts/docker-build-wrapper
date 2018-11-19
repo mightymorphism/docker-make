@@ -3,6 +3,7 @@
 #
 #	${ROOT}/mk/scripts/docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 
+require 'json'
 require 'open3'
 require 'ostruct'
 require 'optparse'
@@ -108,11 +109,14 @@ class DockerBuilder
   def docker_context_setup
     FileUtils.rm_rf(wrap_path())
 
+    FileUtils.mkdir_p(wrap_path())
+    File.open(File.join(wrap_path(), 'metadata.json'), 'w+') do |file|
+      file.puts JSON.pretty_generate(generate_docker_metadata())
+    end
+
     if @copy_paths.empty? then
       return
     end
-
-    FileUtils.mkdir_p(wrap_path())
 
     @copy_paths.each do |src|
       sa = File.stat(src)
@@ -129,6 +133,13 @@ class DockerBuilder
 
   def docker_context_teardown
     FileUtils.rm_rf(wrap_path())
+  end
+
+  def generate_docker_metadata
+    {revision: @revision,
+     build_time: @build_date,
+     branch_name: @current_branch,
+     commit_id: @current_commit_id}
   end
 
   def generate_docker_command
