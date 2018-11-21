@@ -11,6 +11,7 @@ USAGE_MESSAGE = "usage: cfg-version [-c config-path] [-d default-value] <depende
 options = OpenStruct.new
 options.config = nil
 options.default = nil
+options.quiet = false
 options.errors = []
 options.version = false
 
@@ -27,6 +28,9 @@ opt = OptionParser.new do |opts|
   end
   opts.on("-d", "--default", "Set default value", :REQUIRED) do |default|
      options.default = default
+  end
+  opts.on("-q", "--quiet", "Don't complain about missing values", :NONE) do
+     options.quiet = true
   end
 end
 
@@ -61,7 +65,7 @@ end
 
 value = versions.fetch(depname, options.default)
 
-if !value then
+if !options.quiet && !value then
   $stderr.puts "unknown dependency #{depname.inspect}"
   exit(1)
 end
