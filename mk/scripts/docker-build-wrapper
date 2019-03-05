@@ -1,5 +1,5 @@
 #! /usr/bin/env ruby
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
 #
 #	${ROOT}/mk/scripts/docker-build-wrapper [-f] [-a <build-arg>] <docker-name>"
 

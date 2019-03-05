@@ -1,5 +1,5 @@
 #! /usr/bin/env ruby
-# Copyright (c) 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2018-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
 
 # FUTURE: consider retagging via AWS API for ECR targets
 # https://docs.aws.amazon.com/AmazonECR/latest/userguide/retag-aws-cli.html
