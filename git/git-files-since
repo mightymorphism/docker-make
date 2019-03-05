@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git log --name-only --pretty="format:" --since="$@" 
