@@ -147,6 +147,7 @@ class DockerBuilder
     if ENV['DOCKER_SQUASH'] then
       cmd << ENV['DOCKER_SQUASH']
     end
+    cmd << %W(--no-cache) if @force
     cmd << %W(-f #{expand_build_path("Dockerfile.#{@docker_name}")})
     @build_arg.each do |arg|
       cmd << %W(--build-arg #{arg})
