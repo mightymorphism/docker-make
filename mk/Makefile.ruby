@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
 #
 # Make ruby_* dependency of non-ruby version
 $(foreach _, init check clean nuke reset, $(eval $_: ruby_$_))
@@ -17,7 +17,7 @@ ruby_check:
 ruby_init:
 
 ruby_clean:
-	#bundle clean --force
+	bundle clean --force
 
 ruby_nuke: ruby_clean
 

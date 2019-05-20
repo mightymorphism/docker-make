@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved.
 #
 # Make python_* dependency of non-python version
 $(foreach _, init check clean nuke reset, $(eval $_: python_$_))

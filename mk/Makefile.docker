@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved.
 
 # NB: requires "experimental" mode because Docker is dumb as rocks
 ifneq (${DOCKER_SQUASH},)
@@ -20,7 +20,12 @@ define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb
 	${ROOT}/mk/scripts/dockerb -o build/Dockerfile.${1} src/${1}.dockerb ${DOCKERB_ARGS}
 
-docker_expand_${1}: build/Dockerfile.${1}
+build/Dockerfile.${1}.dockerignore:
+	if [ -f src/${1}.dockerignore ] ; then                          \
+		cmp -s src/${1}.dockerignore build/Dockerfile.${1}.dockerignore || cp -f src/${1}.dockerignore build/Dockerfile.${1}.dockerignore       ; \
+	fi
+
+docker_expand_${1}: build/Dockerfile.${1} build/Dockerfile.${1}.dockerignore
 
 docker_build_${1}: docker_expand_${1}
 ifeq ($(filter ${1},${DOCKERB_FORCE_ON_COMMIT}),)

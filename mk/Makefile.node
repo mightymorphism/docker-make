@@ -1,0 +1,17 @@
+# Copyright (c) 2019 Trough Creek Holdings, LLC.  All Rights Reserved.
+#
+# Make node_* dependency of non-node version
+$(foreach _, init check clean nuke reset, $(eval $_: node_$_))
+$(foreach _, init check clean nuke reset, $(eval .PHONY: node_$_))
+
+node_check:
+
+node_init:
+	yarn autoclean --init
+
+node_clean:
+	yarn autoclean --force
+
+node_nuke: node_clean
+
+node_reset: node_clean
