@@ -63,6 +63,10 @@ class DockerBuilder
     @context_root = @build_root
   end
 
+  def fetch_env
+    env = ENV.to_hash.merge({"DOCKER_BUILDKIT" => "1"})
+  end
+
   def fetch_git_param(args)
     out = nil
     Dir.chdir($builder.build_repo_root) do
@@ -235,7 +239,7 @@ Dir.chdir($builder.context_root) do
   if !$builder.nop then
     cmd = Shellwords.join(cmd)
     cmd += " | ts" if $builder.has_ts?
-    if !system(cmd) then
+    if !system($builder.fetch_env, cmd) then
       fail "docker build failed"
     end
   end
