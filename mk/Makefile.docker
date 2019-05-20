@@ -130,14 +130,18 @@ docker_remote_pull_latest: $(patsubst %, docker_remote_pull_latest_%, ${DOCKER_R
 
 docker_remote_cache: $(patsubst %, docker_remote_cache_%, ${DOCKER_REMOTE_CONTAINERS})
 
-docker_clean: $(patsubst %,docker_clean_%, ${DOCKER_CONTAINERS})
+docker_clean: $(patsubst %,docker_clean_%, ${DOCKER_CONTAINERS}) docker_prune
 
 docker_nuke: docker_cleanup $(call func_reverse, $(patsubst %,docker_nuke_%, ${DOCKER_CONTAINERS}))
 	docker volume prune -f
+	docker builder prune -a -f
 
-docker_cleanup:
+docker_prune:
 	docker container prune -f
 	docker image prune -f
+	docker builder prune -f
+
+docker_cleanup: docker_prune
 	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Repository}}:{{.Tag}}" | grep -v ':<none>$$' | xargs -r docker rmi --force
 	docker images "${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}" --format "{{.Digest}}" | xargs -r docker rmi --force
 
