@@ -189,8 +189,10 @@ end
 if $args.verb == 'pull' then
   $stderr.puts "Skipping computation of build_date for pull..."
 else
-  $args.build_date = run_command("docker inspect --format '{{.ContainerConfig.Labels.build_time}}' #{$args.ns}:#{$args.image}-#{$args.revision}")
-  if $args.build_date.nil? || $args.build_date.empty? then
+  cmd = "docker inspect --format '{{.ContainerConfig.Labels.build_time}}'"
+  cmd += " #{$args.ns}:#{$args.image}-#{$args.revision}"
+  $args.build_date = run_command(cmd)
+  if $args.build_date.nil? || $args.build_date.empty? || $ags.build_date.downcase == "no value" then
     $stderr.puts "Unable to retrieve build time stamp"
     exit(1)
   else
