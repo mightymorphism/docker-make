@@ -15,7 +15,7 @@ USAGE_MESSAGE = "Usage: docker-build-wrapper [-f] [-a <build-arg>] <docker-name>
 class DockerBuilder
   ENV_VARS = %w(BUILD_DATE BUILD_ROOT BUILD_REPO_ROOT CURDIR DOCKER_NS REVISION)
 
-  attr_accessor :nop
+  attr_accessor :nop, :buildkit
   attr_accessor :force, :force_on_commit, :copy_paths
   attr_accessor :context_root, :build_root, :build_repo_root, :build_arg
   attr_accessor :docker_name, :docker_image, :docker_build_time
@@ -48,8 +48,11 @@ class DockerBuilder
 
   def set_defaults
     @nop = false
+    @buildkit = false
+
     @force = false
     @force_on_commit = false
+
     @build_arg = []
 
     ENV_VARS.each do |var|
@@ -64,7 +67,11 @@ class DockerBuilder
   end
 
   def fetch_env
-    env = ENV.to_hash.merge({"DOCKER_BUILDKIT" => "1"})
+    env = ENV.to_hash
+    if @buildkit then
+      env.merge!({"DOCKER_BUILDKIT" => "1"})
+    end
+    return env
   end
 
   def fetch_git_param(args)
@@ -198,6 +205,12 @@ opt = OptionParser.new do |opts|
       fail "copy context path must exist: #{root.inspect}"
     end
     options[:copy_paths] << path
+  end
+  opts.on("-b", "--buildkit", "buildkit", :NONE) do
+    options[:buildkit] = true
+  end
+  opts.on("-n", "--nop", "nop", :NONE) do
+    options[:nop] = true
   end
   opts.on("-f", "--force", "force", :NONE) do
     options[:force] = true

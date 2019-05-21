@@ -192,7 +192,7 @@ else
   cmd = "docker inspect --format '{{.ContainerConfig.Labels.build_time}}'"
   cmd += " #{$args.ns}:#{$args.image}-#{$args.revision}"
   $args.build_date = run_command(cmd)
-  if $args.build_date.nil? || $args.build_date.empty? || $ags.build_date.downcase == "no value" then
+  if $args.build_date.nil? || $args.build_date.empty? || $args.build_date.downcase == "no value" then
     $stderr.puts "Unable to retrieve build time stamp"
     exit(1)
   else
