@@ -1,5 +1,5 @@
-ruby: 2.6.1
-ruby_bundler: 1.17.3
+ruby: 2.6.4
+ruby_bundler: 2.0.2
 golang: 1.12
 java: openjdk-8
 nodejs: 10.15.2
