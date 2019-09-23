@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved.
+# Copyright (c) 2017-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
 #
 # Make python_* dependency of non-python version
 $(foreach _, init check clean nuke reset, $(eval $_: python_$_))
@@ -7,7 +7,7 @@ $(foreach _, init check clean nuke reset, $(eval .PHONY: python_$_))
 include ${ROOT}/mk/Makefile.venv
 
 python_check:
-	@if [ -z "$${VIRTUALENV}" ] ; then				\
+	@if [ -z "$${VIRTUAL_ENV}" ] ; then				\
 		echo "virtualenv not (properly) activated" 1>&2 ;	\
 		exit 1 ;						\
 	fi

@@ -14,17 +14,23 @@ venv_check:
 	fi
 
 venv_init:
-#	python3 -m venv ${VENV_ROOT}
-	@if [ \! -f ${VENV_ROOT}/bin/activate ] ; then	\
-                virtualenv --no-site-packages ${VENV_ROOT};     \
+	@if [ \! -f ${VENV_ROOT}/bin/activate ] ; then			\
+		use_venv=`${PYTHON} -c "import sys; print((1, 0)[sys.version_info <= (3,3)])"` ; \
+		if [ $${use_venv} -eq 0 ] ; then			\
+			echo "virtualenv --python=${PYTHON} ..." ;	\
+			virtualenv --python=${PYTHON} --no-site-packages ${VENV_ROOT};     \
+		else							\
+			echo "${PYTHON} -m venv ..." ;			\
+			${PYTHON} -m venv ${VENV_ROOT} ;		\
+		fi							\
 	fi
 
 venv_install: venv_check
-	pip install --upgrade --user wheel
-	pip install --upgrade --user -r requirements.txt
+	${PYTHON_PIP} install --upgrade --user wheel
+	${PYTHON_PIP} install --upgrade --user -r requirements.txt
 
 venv_wheel: venv_check
-	pip wheel -w ${ROOT}/vendor/wheel -r requirements.txt
+	${PYTHON_PIP} wheel -w ${ROOT}/vendor/wheel -r requirements.txt
 
 venv_clean:
 	rm -f *.pyc
