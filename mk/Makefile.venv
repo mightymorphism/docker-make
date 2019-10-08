@@ -24,19 +24,17 @@ venv_init:
 			${PYTHON} -m venv ${VENV_ROOT} ;		\
 		fi							\
 	fi
-
-venv_install: venv_check
-	${PYTHON_PIP} install --upgrade --user wheel
-	${PYTHON_PIP} install --upgrade --user -r requirements.txt
-
-venv_wheel: venv_check
-	${PYTHON_PIP} wheel -w ${ROOT}/vendor/wheel -r requirements.txt
+	@if [ -f ${VENV_ROOT}/bin/activate ] ; then			\
+		. ${VENV_ROOT}/bin/activate ;				\
+		${PYTHON_PIP} install --upgrade --user wheel ;		\
+	fi
 
 venv_clean:
-	rm -f *.pyc
+	find ${VENV_ROOT} -type f -a -name '*.py[co]' | xargs rm -f
 
 venv_nuke: venv_clean
-	find ${VENV_ROOT} -type f -a -name '*.pyc' | xargs rm -f
+	rm -Rf ${VENV_ROOT}
+	find ${ROOT} -type f -a -name '*.py[co]' | xargs rm -f
 
 venv_reset:
 	virtualenv --clear ${VENV_ROOT}

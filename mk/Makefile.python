@@ -15,8 +15,29 @@ python_check:
 python_init: python_check
 
 python_clean:
+	find . -path ./vendor/virtualenv -prune -o \( -type d -a -name __pycache__ \) -print0 | xargs -0 rm -Rf
 
-python_nuke: python_clean
-	find . -path ./vendor -prune -o \( -type d -a -name __pycache__ \) -print0 | xargs -0 rm -Rf
+python_nuke: python_clean venv_nuke
+	find ${ROOT}/vendor/wheel -print0 | xargs -0 rm -f
 
 python_reset: python_clean
+
+pip_freeze: venv_check
+	${PYTHON_PIP} freeze | grep -v "^pkg-resources==" > requirements.txt
+
+pip_download:
+	${PYTHON_PIP} download -r requirements.txt -d ${ROOT}/vendor/wheel
+
+pip_wheel: venv_check
+	${PYTHON_PIP} wheel -w ${ROOT}/vendor/wheel -r requirements.txt
+
+pip_install: venv_check
+	if test -d ${ROOT}/vendor/wheel ;			\
+	then							\
+		${PYTHON_PIP} install --user -r requirements.txt --no-index --find-links ${ROOT}/vendor/wheel ;		\
+	else							\
+		${PYTHON_PIP} install --user -r requirements.txt;	\
+	fi
+
+pip_upgrade:
+	${PYTHON_PIP} install --user --upgrade -r requirements.txt
