@@ -8,8 +8,6 @@ lambda_build: venv_init
 	make ${LAMBDA}.zip
 
 ${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
-	. ${VENV_ROOT}/bin/activate ;					\
-									\
 	rm -f ${LAMBDA}.zip ;						\
 	zip -r ${LAMBDA}.zip *.py ;					\
 									\
@@ -18,7 +16,7 @@ ${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
 		(cd `dirname $$f` && zip -r $$zipfile `basename $$f`) ;	\
 	done ;								\
 									\
-	for d in local/lib lib/python2.7/site-packages ; do		\
+	for d in local/lib lib/python[23].*/site-packages ; do		\
 		if [ -d ${VENV_ROOT}/$$d ] ; then			\
 			(cd ${VENV_ROOT}/$$d && zip -r $$zipfile .) ;	\
 		fi							\
