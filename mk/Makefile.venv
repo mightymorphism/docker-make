@@ -1,10 +1,10 @@
-# Copyright (c) 2017 Trough Creek Holdings, LLC.  All Rights Reserved.
+# Copyright (c) 2017-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
 #
 # Make venv_* dependency of non-venv version
 $(foreach _, init check clean nuke reset, $(eval $_: venv_$_))
 $(foreach _, init check clean nuke reset, $(eval .PHONY: venv_$_))
 
-VENV_ROOT := ${ROOT}/vendor/virtualenv
+VENV_ROOT ?= ${ROOT}/vendor/virtualenv
 export VENV_ROOT
 
 venv_check:
@@ -26,6 +26,7 @@ venv_init:
 	fi
 	@if [ -f ${VENV_ROOT}/bin/activate ] ; then			\
 		. ${VENV_ROOT}/bin/activate ;				\
+		${PYTHON_PIP} install --upgrade wheel ;			\
 		${PYTHON_PIP} install --upgrade --user wheel ;		\
 	fi
 

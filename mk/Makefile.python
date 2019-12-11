@@ -32,12 +32,16 @@ pip_wheel: venv_check
 	${PYTHON_PIP} wheel -w ${ROOT}/vendor/wheel -r requirements.txt
 
 pip_install: venv_check
-	if test -d ${ROOT}/vendor/wheel ;			\
-	then							\
-		${PYTHON_PIP} install --user -r requirements.txt --no-index --find-links ${ROOT}/vendor/wheel ;		\
-	else							\
-		${PYTHON_PIP} install --user -r requirements.txt;	\
-	fi
+	PIP_ARGS="-r requirements.txt";					\
+	if test -z "${VIRTUAL_ENV}" ;					\
+	then								\
+		PIP_ARGS="$${PIP_ARGS} --user";				\
+	fi ;								\
+	if test -d ${ROOT}/vendor/wheel ;				\
+	then								\
+		PIP_ARGS="$${PIP_ARGS} --no-index --find-links ${ROOT}/vendor/wheel" ;	\
+	fi ;								\
+	${PYTHON_PIP} install $${PIP_ARGS};
 
 pip_upgrade:
 	${PYTHON_PIP} install --user --upgrade -r requirements.txt

@@ -16,9 +16,10 @@ ${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
 		(cd `dirname $$f` && zip -r $$zipfile `basename $$f`) ;	\
 	done ;								\
 									\
-	for d in local/lib lib/python[23].*/site-packages ; do		\
-		if [ -d ${VENV_ROOT}/$$d ] ; then			\
-			(cd ${VENV_ROOT}/$$d && zip -r $$zipfile .) ;	\
+	for d in `find ${VENV_ROOT} -type d -a -name site-packages`; do	\
+		echo "FOO: $${d}" ; 	\
+		if [ -d $$d ] ; then					\
+			(cd $$d && zip -r $$zipfile .) ;		\
 		fi							\
 	done
 
