@@ -4,12 +4,14 @@
 $(foreach _, init check clean nuke reset, $(eval $_: lambda_$_))
 $(foreach _, init check clean nuke reset, $(eval .PHONY: lambda_$_))
 
+LAMBDA_SRC_FILES ?= lambda_function.py
+
 lambda_build: venv_init
 	make ${LAMBDA}.zip
 
-${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
+${LAMBDA}.zip: ${LAMBDA_SRC_FILES} ${LAMBDA_ZIP_FILES}
 	rm -f ${LAMBDA}.zip ;						\
-	zip -r ${LAMBDA}.zip *.py ;					\
+	zip -r ${LAMBDA}.zip ${LAMBDA_SRC_FILES} ;			\
 									\
 	zipfile=${CURDIR}/${LAMBDA}.zip ;				\
 	for f in ${LAMBDA_ZIP_FILES} ; do				\
@@ -17,7 +19,6 @@ ${LAMBDA}.zip: lambda_function.py ${LAMBDA_ZIP_FILES}
 	done ;								\
 									\
 	for d in `find ${VENV_ROOT} -type d -a -name site-packages`; do	\
-		echo "FOO: $${d}" ; 	\
 		if [ -d $$d ] ; then					\
 			(cd $$d && zip -r $$zipfile .) ;		\
 		fi							\
