@@ -11,7 +11,7 @@ lambda_build: venv_init
 
 ${LAMBDA}.zip: ${LAMBDA_SRC_FILES} ${LAMBDA_ZIP_FILES}
 	rm -f ${LAMBDA}.zip ;						\
-	zip -r ${LAMBDA}.zip ${LAMBDA_SRC_FILES} ;			\
+	zip -r9 ${LAMBDA}.zip ${LAMBDA_SRC_FILES} -x **/__pycache__/*; \
 									\
 	zipfile=${CURDIR}/${LAMBDA}.zip ;				\
 	for f in ${LAMBDA_ZIP_FILES} ; do				\
@@ -20,7 +20,7 @@ ${LAMBDA}.zip: ${LAMBDA_SRC_FILES} ${LAMBDA_ZIP_FILES}
 									\
 	for d in `find ${VENV_ROOT} -type d -a -name site-packages`; do	\
 		if [ -d $$d ] ; then					\
-			(cd $$d && zip -r $$zipfile .) ;		\
+			(cd $$d && zip -r9 $$zipfile .) ;		\
 		fi							\
 	done
 
