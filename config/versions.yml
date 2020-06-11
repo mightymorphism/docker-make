@@ -1,4 +1,4 @@
-ruby: 2.6.5
+ruby: 2.6.6
 ruby_bundler: 2.0.2
 golang: 1.12
 java: openjdk-8
