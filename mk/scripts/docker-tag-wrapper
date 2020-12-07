@@ -99,6 +99,7 @@ def run_command(cmd, dir=nil)
 end
 
 $args = OpenStruct.new
+$args.mode = nil
 $args.force = false
 $args.dry_run = false
 $args.build_root = ENV['BUILD_ROOT']
@@ -111,6 +112,14 @@ $args.aws_profile = nil
 
 opt = OptionParser.new do |opts|
   opts.banner = USAGE_BANNER
+  opts.on("-m", "--mode", "Error handling mode", :REQUIRED) do |m|
+    if !%w(all any continue).member?(m) then
+      $stderr.puts "Invalide mode: #{m.inspect}"
+      exit(1)
+    end
+    $args.mode = m
+  end
+
   opts.on("-n", "--dry-run", "Print out, but do not execute, commands", :NONE) do
     $args.dry_run = true
   end
@@ -190,6 +199,7 @@ if $args.verb == 'pull' then
   $stderr.puts "Skipping computation of build_date for pull..."
 else
   cmd = "docker inspect --format '{{.ContainerConfig.Labels.build_time}}'"
+#  cmd += " #{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
   cmd += " #{$args.ns}:#{$args.image}-#{$args.revision}"
   $args.build_date = run_command(cmd)
   if $args.build_date.nil? || $args.build_date.empty? || $args.build_date.downcase == "no value" then
@@ -252,7 +262,7 @@ end
 
 ecr_tags = []
 commands = []
-exec_mode = 'all'			# BOTCH: super crude
+exec_mode = $args.mode || 'all'
 case $args.verb
 when 'tag'
   commands = tag_commands
@@ -263,7 +273,7 @@ when 'push'
     commands = push_commands
   end
 when 'pull'
-  exec_mode = 'any'			# we just need one
+  exec_mode = $args.mode || 'any'		# best effort
   commands = pull_commands
 end
 
@@ -283,7 +293,7 @@ commands.each do |cmd|
   end
 end
 
-if !$args.force && exec_mode == 'any' && status.all? { |v| !v[1] } then
+if !$args.force && exec_mode == 'any' && !status.empty? && status.all? { |v| !v[1] } then
   $stderr.puts "Failed: all #{$args.verb} commands failed."
   exit(1)
 end
@@ -298,12 +308,12 @@ if $args.label_ecr && $args.verb == 'push' then
 
   manifest = nil
   metadata['images'].each do |img|
-     data = JSON.parse(img['imageManifest'])
-     if data['config']['digest'] == pushed_digest then
-        pushed_tags << img['imageId']['imageTag']
-        if manifest.nil? then
-          manifest = img['imageManifest']
-        end
+    data = JSON.parse(img['imageManifest'])
+    if data['config']['digest'] == pushed_digest then
+      pushed_tags << img['imageId']['imageTag']
+      if manifest.nil? then
+        manifest = img['imageManifest']
+      end
     end
   end
 
