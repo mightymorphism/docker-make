@@ -13,6 +13,8 @@ require 'ostruct'
 require 'optparse'
 require 'shellwords'
 
+VERBS = %w(tag tag_local push pull)
+
 USAGE_BANNER = "Usage: docker-tag-wrapper <verb> <$args.registry> <repo> <ns> <$args.image> <$args.revision>"
 
 def ecr_get_image_metadata(tag_list)
@@ -172,8 +174,8 @@ opt.parse!
 
    case var
    when 'verb'
-     if !%w(tag push pull).member?(ARGV[i]) then
-       $stderr.puts "<verb> must be one of 'tag', 'push', or 'pull'"
+     if !VERBS.member?(ARGV[i]) then
+       $stderr.puts "<verb> must be one of #{VERBS.join(", ")}"
        exit(1)
      end
    end
@@ -195,8 +197,8 @@ else
   $args.build_sha = $args.build_sha[0...8]
 end
 
-if $args.verb == 'pull' then
-  $stderr.puts "Skipping computation of build_date for pull..."
+if %w(pull tag_local).member?($args.verb) then
+  $stderr.puts "Skipping computation of build_date for #{$args.verb}..."
 else
   cmd = "docker inspect --format '{{.ContainerConfig.Labels.build_time}}'"
 #  cmd += " #{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
@@ -213,21 +215,31 @@ end
 
 tag_list = []
 pull_tag_list = []
+local_tag_list = []
 remote_tag_prefix = "#{$args.registry}/#{$args.repository}"
 
 if !$args.label_only_latest then
   tag = "#{remote_tag_prefix}:#{$args.image}-commit-#{$args.build_sha}"
+  local_tag = "#{$args.ns}:#{$args.image}-commit-#{$args.build_sha}"
+
   tag_list << tag
-  pull_tag_list << tag
+#  pull_tag_list << tag
+#  local_tag_list << local_tag
 
   tag = "#{remote_tag_prefix}:#{$args.image}-branch-#{$args.branch}"
+  local_tag = "#{$args.ns}:#{$args.image}-branch-#{$args.branch}"
+
   tag_list << tag
   pull_tag_list << tag
+  local_tag_list << local_tag
 
   if $args.label_latest then
     tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.branch}-latest"
+    local_tag = "#{$args.ns}:#{$args.image}-#{$args.branch}-latest"
+
     tag_list <<  tag
     pull_tag_list << tag
+    local_tag_list << local_tag
   end
 end
 
@@ -235,17 +247,25 @@ if $args.verb != 'pull' then
   tag_list << "#{remote_tag_prefix}:#{$args.image}-build-#{$args.build_date}"
 end
 tag_list << "#{remote_tag_prefix}:#{$args.image}"
+pull_tag_list << "#{remote_tag_prefix}:#{$args.image}"
+local_tag_list << "#{$args.ns}:#{$args.image}"
 
 if $args.label_latest then
   tag = "#{remote_tag_prefix}:#{$args.image}-latest"
+  local_tag = "#{$args.ns}:#{$args.image}-latest"
+
   tag_list << tag
   pull_tag_list << tag
+  local_tag_list << local_tag
 end
 
 if !$args.label_only_latest then
   tag = "#{remote_tag_prefix}:#{$args.image}-#{$args.revision}"
+  local_tag = "#{$args.ns}:#{$args.image}-#{$args.revision}"
+
   tag_list << tag
   pull_tag_list << tag
+  local_tag_list << local_tag
 end
 
 tag_commands = tag_list.map do |t|
@@ -260,12 +280,19 @@ pull_commands = pull_tag_list.map do |t|
   "docker pull #{t}"
 end
 
+pull_tag_commands = pull_tag_list.zip(local_tag_list).map do |tp|
+  "docker tag #{tp[0]} #{tp[1]}"
+end
+
 ecr_tags = []
 commands = []
 exec_mode = $args.mode || 'all'
 case $args.verb
 when 'tag'
   commands = tag_commands
+when 'tag_local'
+  exec_mode = $args.mode || 'continue'		# best effort
+  commands = pull_tag_commands
 when 'push'
   if $args.label_ecr then
     commands << push_commands.first

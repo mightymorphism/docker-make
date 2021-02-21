@@ -53,6 +53,9 @@ docker_nuke_${1}: docker_stamp_nuke_${1}
 docker_tag_${1}:
 	@/bin/true
 
+docker_local_tag_${1}: docker_tag_${1}
+	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} tag_local ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
+
 docker_remote_tag_${1}: docker_tag_${1}
 	${ROOT}/mk/scripts/docker-tag-wrapper ${DOCKER_TAG_WRAPPER_SYSTEM_ARGS} ${DOCKER_TAG_WRAPPER_ARGS} tag ${DOCKER_REGISTRY} ${DOCKER_REPOSITORY} ${DOCKER_NS} ${1} ${REVISION}
 
@@ -120,6 +123,8 @@ docker_compile: $(patsubst %, docker_expand_%, ${DOCKER_CONTAINERS}) $(patsubst 
 docker_build: $(patsubst %, docker_build_%, ${DOCKER_CONTAINERS})
 
 docker_tag: $(patsubst %, docker_tag_%, ${DOCKER_CONTAINERS})
+
+docker_local_tag: $(patsubst %, docker_local_tag_%, ${DOCKER_REMOTE_CONTAINERS})
 
 docker_remote_tag: $(patsubst %, docker_remote_tag_%, ${DOCKER_REMOTE_CONTAINERS})
 
