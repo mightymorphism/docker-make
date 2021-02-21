@@ -1,5 +1,5 @@
 #! /usr/bin/env ruby
-# Copyright (c) 2018-2019 Trough Creek Holdings, LLC.  All Rights Reserved.
+# Copyright (c) 2018-2021 Trough Creek Holdings, LLC.  All Rights Reserved.
 
 # FUTURE: consider retagging via AWS API for ECR targets
 # https://docs.aws.amazon.com/AmazonECR/latest/userguide/retag-aws-cli.html
@@ -273,7 +273,7 @@ when 'push'
     commands = push_commands
   end
 when 'pull'
-  exec_mode = $args.mode || 'any'		# best effort
+  exec_mode = $args.mode || 'continue'		# best effort
   commands = pull_commands
 end
 
@@ -293,7 +293,7 @@ commands.each do |cmd|
   end
 end
 
-if !$args.force && exec_mode == 'any' && !status.empty? && status.all? { |v| !v[1] } then
+if !$args.force && %w(any continue).member?(exec_mode) && !status.empty? && status.all? { |v| !v[1] } then
   $stderr.puts "Failed: all #{$args.verb} commands failed."
   exit(1)
 end
