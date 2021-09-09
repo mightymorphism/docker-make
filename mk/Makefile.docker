@@ -18,7 +18,15 @@ DOCKER_TAG_WRAPPER_SYSTEM_ARGS := $(if ${DOCKER_AWS_REGION}, --aws-region ${DOCK
 
 define DOCKER_BUILD_template
 build/Dockerfile.${1}: src/${1}.dockerb
+ifeq ("$(wildcard ${ROOT}/config/dockerb-${1}.yml)", "")
+ifeq ("$(wildcard ${ROOT}/config/dockerb.yml)", "")
 	${ROOT}/mk/scripts/dockerb -o build/Dockerfile.${1} src/${1}.dockerb ${DOCKERB_ARGS}
+else
+	${ROOT}/mk/scripts/dockerb -c ${ROOT}/config/dockerb.yml -o build/Dockerfile.${1} src/${1}.dockerb ${DOCKERB_ARGS}
+endif
+else
+	${ROOT}/mk/scripts/dockerb -c ${ROOT}/config/dockerb-${1}.yml -o build/Dockerfile.${1} src/${1}.dockerb ${DOCKERB_ARGS}
+endif
 
 build/Dockerfile.${1}.dockerignore:
 	if [ -f src/${1}.dockerignore ] ; then                          \
