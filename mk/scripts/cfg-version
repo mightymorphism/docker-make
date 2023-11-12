@@ -22,7 +22,7 @@ opt = OptionParser.new do |opts|
   end
   opts.on("-c", "--config", "Set config file", :REQUIRED) do |path|
      options.config = path
-     if !File.exists?(path) then
+     if !File.exist?(path) then
        options.errors << "unknown config file: #{path.inspect}"
      end
   end
@@ -53,7 +53,7 @@ depname = ARGV[0]
 cfg_path = options.config
 cfg_path ||= File.expand_path(DEFAULT_CONFIG_PATH)
 
-if !File.exists?(cfg_path) then
+if !File.exist?(cfg_path) then
   $stderr.puts "unable to find configuration file: #{cfg_path.inspect}"
   exit(1)
 end

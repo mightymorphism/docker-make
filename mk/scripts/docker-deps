@@ -71,7 +71,7 @@ end
 
 ok = true
 docker_files = ARGV.map do |fname|
-  if !File.exists?(fname) then
+  if !File.exist?(fname) then
     $stderr.puts "#{fname.inspect} does not exist"
     ok = false
   elsif File.directory?(fname) then

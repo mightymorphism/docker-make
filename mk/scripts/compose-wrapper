@@ -36,7 +36,7 @@ while i<ARGV.length do
       fname = ARGV[i]
       i += 1
 
-      if File.exists?(fname) then
+      if File.exist?(fname) then
         compose_args += %W(-f #{fname})
       elsif !fname.include?('/') then
         fname = File.join(rootdir, "docker/build", "compose-#{fname}.yml")

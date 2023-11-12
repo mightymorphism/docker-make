@@ -96,7 +96,7 @@ if ARGV.length < 2 then
 end
 
 $fname = ARGV[0]
-if !File.exists?($fname) then
+if !File.exist?($fname) then
   $stderr.puts("no such file: #{$fname.inspect}")
   Kernel.exit(1)
 elsif !File.readable?($fname) then
@@ -120,7 +120,7 @@ ARGV[1..-1].each_with_index do |arg, i|
 end
 
 if options.config_file then
-  if !File.exists?(options.config_file) then
+  if !File.exist?(options.config_file) then
     $stderr.puts "Config file #{options.config_file.inspect} does not exist"
     Kernel.exit(1)
   end
@@ -166,7 +166,7 @@ if !options.output_file then
 end
 
 current = nil
-if File.exists?(options.output_file) then
+if File.exist?(options.output_file) then
   current = File.read(options.output_file)
 end
 

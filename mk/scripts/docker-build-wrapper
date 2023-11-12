@@ -179,7 +179,7 @@ class DockerBuilder
   end
 
   def read_path_or_empty(path)
-    if File.exists?(path) then
+    if File.exist?(path) then
       return File.read(path).chomp
     end
     return ''
