@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved.
+# Copyright (c) 2017-2023 Trough Creek Holdings, LLC.  All Rights Reserved.
 
 # NB: requires "experimental" mode because Docker is dumb as rocks
 ifneq (${DOCKER_SQUASH},)
@@ -175,7 +175,7 @@ docker_images:
 	docker images -f "label=docker_ns=${DOCKER_NS}"
 
 docker_labels:
-	docker inspect --format '{{json .ContainerConfig.Labels}}' ${PACKAGE_NAME}:$(or ${C},${COMPOSE_DEFAULT})-${REVISION}|jq
+	docker inspect --format '{{json .Config.Labels}}' ${PACKAGE_NAME}:$(or ${C},${COMPOSE_DEFAULT})-${REVISION}|jq
 
 docker_show_deps:
 	@echo -n "INPUT\t\t->\tOUTPUT\n"

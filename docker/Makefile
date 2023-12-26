@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018 Trough Creek Holdings, LLC.  All Rights Reserved
+# Copyright (c) 2017-2023 Trough Creek Holdings, LLC.  All Rights Reserved
 
 ROOT=$(abspath ${CURDIR}/..)
 
@@ -24,7 +24,7 @@ list_remote:
 	@echo ${DOCKER_REMOTE_CONTAINERS}
 
 labels:
-	docker inspect --format '{{json .ContainerConfig.Labels}}' ${PACKAGE_NAME}:$(or ${C},api)-${REVISION}|jq
+	docker inspect --format '{{json .Config.Labels}}' ${PACKAGE_NAME}:$(or ${C},api)-${REVISION}|jq
 
 rebuild_api:
 	${MAKE} docker_rebuild_api && ${MAKE} docker_remote_push && ${MAKE} docker_rebuild_api-dev && ${MAKE} docker_cleanup

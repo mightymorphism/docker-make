@@ -1,5 +1,5 @@
 #! /usr/bin/env ruby
-# Copyright (c) 2018-2021 Trough Creek Holdings, LLC.  All Rights Reserved.
+# Copyright (c) 2018-2023 Trough Creek Holdings, LLC.  All Rights Reserved.
 
 # FUTURE: consider retagging via AWS API for ECR targets
 # https://docs.aws.amazon.com/AmazonECR/latest/userguide/retag-aws-cli.html
@@ -200,7 +200,7 @@ end
 if %w(pull tag_local).member?($args.verb) then
   $stderr.puts "Skipping computation of build_date for #{$args.verb}..."
 else
-  cmd = "docker inspect --format '{{.ContainerConfig.Labels.build_time}}'"
+  cmd = "docker inspect --format '{{.Config.Labels.build_time}}'"
 #  cmd += " #{$args.registry}/#{$args.repository}:#{$args.image}-#{$args.revision}"
   cmd += " #{$args.ns}:#{$args.image}-#{$args.revision}"
   $args.build_date = run_command(cmd)
